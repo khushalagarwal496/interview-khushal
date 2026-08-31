@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PrepPilot AI — Interview Analysis</title>
+<meta name="description" content="AI-powered interview performance analysis with integrity report, event timeline, and personalized feedback." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #04050a; --surface: #0a0d16; --surface2: #0e1220;
+  --text: #f0eeff; --muted: #7a84a0; --line: rgba(255,255,255,0.08);
+  --lime: #c8ff5e; --violet: #9d8fff; --cyan: #67e8f9; --pink: #f472b6; --amber: #fbbf24;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
+
+/* BG blobs */
+.bg-blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; filter: blur(160px); opacity: 0.4; }
+.blob-1 { position: absolute; width: 700px; height: 700px; top: -200px; left: -100px; background: radial-gradient(circle, rgba(157,143,255,0.5), transparent 65%); }
+.blob-2 { position: absolute; width: 500px; height: 500px; top: 40%; right: -80px; background: radial-gradient(circle, rgba(103,232,249,0.4), transparent 65%); }
+.blob-3 { position: absolute; width: 400px; height: 400px; bottom: -100px; left: 30%; background: radial-gradient(circle, rgba(200,255,94,0.25), transparent 65%); }
+
+/* Layout */
+.page { position: relative; z-index: 2; max-width: 1080px; margin: 0 auto; padding: 28px 24px 60px; }
+
+/* Header */
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 18px; color: #fff; text-decoration: none; }
+.brand-logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(145deg, var(--lime), #7dfcc5); display: grid; place-items: center; color: #06080e; font-size: 15px; }
+.back-btn { padding: 9px 18px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.back-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+/* Section title */
+.section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 14px; }
+
+/* Glass Cards */
+.card {
+  background: rgba(10,13,22,0.85); backdrop-filter: blur(20px);
+  border: 1px solid var(--line); border-radius: 24px; padding: 24px 28px;
+  transition: border-color 0.3s;
+}
+.card:hover { border-color: rgba(255,255,255,0.14); }
+
+/* Grid helpers */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+
+/* Status Banner */
+.status-banner {
+  padding: 16px 22px; border-radius: 18px; display: flex; align-items: center; gap: 14px;
+  border: 1px solid; margin-bottom: 24px;
+}
+.status-banner.completed { background: rgba(200,255,94,0.06); border-color: rgba(200,255,94,0.25); }
+.status-banner.terminated { background: rgba(244,114,182,0.08); border-color: rgba(244,114,182,0.3); }
+.status-icon { font-size: 32px; }
+.status-info h2 { font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 800; }
+.status-info p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+/* Big score ring */
+.score-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.score-ring { width: 120px; height: 120px; border-radius: 50%; display: grid; place-items: center; position: relative; }
+.score-ring::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,0.06); }
+.score-ring-val { font-family: 'Outfit', sans-serif; font-size: 34px; font-weight: 900; }
+.score-ring-lbl { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+
+/* Stat chips */
+.stat-row { display: flex; flex-direction: column; gap: 10px; }
+.stat-item { display: flex; align-items: center; justify-content: space-between; }
+.stat-label { font-size: 13px; color: var(--muted); }
+.stat-val { font-size: 13px; font-weight: 700; color: var(--text); }
+
+/* Progress bar */
+.bar-wrap { width: 100%; height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 4px; }
+.bar-fill { height: 100%; border-radius: 999px; transition: width 1s ease 0.3s; }
+
+/* Metric card */
+.metric-card {
+  padding: 18px 20px; background: rgba(255,255,255,0.025); border: 1px solid var(--line);
+  border-radius: 18px; display: flex; flex-direction: column; gap: 6px;
+}
+.metric-val { font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 900; }
+.metric-lbl { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+
+/* Integrity gauge */
+.integrity-gauge {
+  display: flex; align-items: center; gap: 20px; padding: 20px;
+  background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 18px;
+}
+.gauge-score { font-family: 'Outfit', sans-serif; font-size: 56px; font-weight: 900; line-height: 1; }
+.gauge-score.high { color: var(--lime); }
+.gauge-score.mid  { color: var(--amber); }
+.gauge-score.low  { color: var(--pink); }
+
+/* Integrity stat grid */
+.int-stat { padding: 14px; background: rgba(255,255,255,0.025); border: 1px solid var(--line); border-radius: 14px; text-align: center; }
+.int-stat-val { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: var(--cyan); }
+.int-stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-top: 3px; }
+
+/* Event Timeline */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.timeline-item { display: flex; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.timeline-item:last-child { border-bottom: none; }
+.timeline-ts { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted); flex-shrink: 0; width: 70px; padding-top: 2px; }
+.timeline-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.timeline-dot.info    { background: var(--cyan); }
+.timeline-dot.warning { background: var(--amber); }
+.timeline-dot.concern { background: var(--pink); }
+.timeline-dot.minor   { background: var(--violet); }
+.timeline-dot.critical { background: #f87171; box-shadow: 0 0 8px #f87171; }
+.timeline-content { flex: 1; }
+.timeline-type { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.timeline-detail { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+/* Severity badge */
+.sev-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 700; }
+.sev-badge.INFO    { background: rgba(103,232,249,0.12); color: var(--cyan); }
+.sev-badge.MINOR   { background: rgba(157,143,255,0.12); color: var(--violet); }
+.sev-badge.WARNING { background: rgba(251,191,36,0.12); color: var(--amber); }
+.sev-badge.CONCERN { background: rgba(244,114,182,0.12); color: var(--pink); }
+.sev-badge.CRITICAL { background: rgba(248,113,113,0.15); color: #f87171; }
+
+/* AI Feedback cards */
+.feedback-card {
+  padding: 18px 20px; background: rgba(255,255,255,0.025); border: 1px solid var(--line);
+  border-radius: 18px; font-size: 13.5px; color: #c8d0e8; line-height: 1.75;
+}
+.feedback-item { display: flex; gap: 10px; margin-bottom: 6px; }
+.feedback-item:last-child { margin-bottom: 0; }
+.fi-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 7px; }
+
+/* Auto termination timeline */
+.auto-term-section { padding: 20px; background: rgba(244,114,182,0.06); border: 1px solid rgba(244,114,182,0.25); border-radius: 18px; }
+
+/* Scroll section spacing */
+.section { margin-bottom: 28px; }
+
+/* Print / share button */
+.action-btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px;
+  border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s;
+}
+.action-btn.primary { background: var(--lime); color: #060810; box-shadow: 0 6px 24px rgba(200,255,94,0.3); }
+.action-btn.primary:hover { background: #b5f542; transform: translateY(-1px); }
+.action-btn.secondary { background: rgba(157,143,255,0.15); color: var(--violet); border: 1px solid rgba(157,143,255,0.3); }
+.action-btn.secondary:hover { background: rgba(157,143,255,0.25); }
+
+/* Separator */
+.sep { height: 1px; background: var(--line); margin: 28px 0; }
+
+@keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: none; } }
+.card { animation: fadeUp 0.4s ease both; }
+
+@media (max-width: 700px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="bg-blobs">
+  <div class="blob-1"></div>
+  <div class="blob-2"></div>
+  <div class="blob-3"></div>
+</div>
+
+<div class="page">
+  <!-- HEADER -->
+  <div class="page-header">
+    <a class="brand" href="index.html">
+      <div class="brand-logo">✦</div>
+      PrepPilot AI Interview
+    </a>
+    <a class="back-btn" href="index.html">← Return to Dashboard</a>
+  </div>
+
+  <!-- PAGE TITLE -->
+  <div style="margin-bottom: 24px;">
+    <h1 style="font-family:'Outfit',sans-serif; font-size:30px; font-weight:900;">Interview Analysis Report</h1>
+    <p style="font-size:14px; color:var(--muted); margin-top:5px;" id="subtitle-text">AI-generated performance & integrity analysis</p>
+  </div>
+
+  <!-- STATUS BANNER -->
+  <div class="status-banner completed" id="status-banner">
+    <div class="status-icon" id="status-icon">✅</div>
+    <div class="status-info">
+      <h2 id="status-title">Interview Completed</h2>
+      <p id="status-subtitle">All questions answered. Full performance analysis is available below.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════ INTERVIEW SUMMARY ═══════════════ -->
+  <div class="section">
+    <div class="section-label">Interview Summary</div>
+    <div class="grid-4" style="margin-bottom:0;">
+      <div class="metric-card">
+        <div class="metric-lbl">Status</div>
+        <div class="metric-val" id="sum-status" style="color:var(--lime); font-size:20px;">Completed</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-lbl">Total Duration</div>
+        <div class="metric-val" id="sum-duration" style="color:var(--cyan); font-size:20px;">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-lbl">Questions Done</div>
+        <div class="metric-val" id="sum-questions" style="color:var(--violet); font-size:20px;">— / —</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-lbl">Overall Score</div>
+        <div class="metric-val" id="sum-score" style="color:var(--lime);">82</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PERFORMANCE BREAKDOWN ═══════════════ -->
+  <div class="section">
+    <div class="section-label">Interview Performance</div>
+    <div class="grid-2">
+
+      <!-- Left: Score rings -->
+      <div class="card">
+        <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap;">
+          <div class="score-ring-wrap">
+            <div class="score-ring" style="background: conic-gradient(var(--lime) 0% var(--comm-pct, 85%), rgba(255,255,255,0.06) 0%);">
+              <div class="score-ring-val" style="color:var(--lime)" id="ring-comm">85%</div>
+            </div>
+            <div class="score-ring-lbl">Communication</div>
+          </div>
+          <div class="score-ring-wrap">
+            <div class="score-ring" style="background: conic-gradient(var(--cyan) 0% var(--tech-pct, 78%), rgba(255,255,255,0.06) 0%);">
+              <div class="score-ring-val" style="color:var(--cyan)" id="ring-tech">78%</div>
+            </div>
+            <div class="score-ring-lbl">Technical</div>
+          </div>
+          <div class="score-ring-wrap">
+            <div class="score-ring" style="background: conic-gradient(var(--violet) 0% var(--conf-pct, 88%), rgba(255,255,255,0.06) 0%);">
+              <div class="score-ring-val" style="color:var(--violet)" id="ring-conf">88%</div>
+            </div>
+            <div class="score-ring-lbl">Confidence</div>
+          </div>
+          <div class="score-ring-wrap">
+            <div class="score-ring" style="background: conic-gradient(var(--pink) 0% var(--aq-pct, 82%), rgba(255,255,255,0.06) 0%);">
+              <div class="score-ring-val" style="color:var(--pink)" id="ring-aq">82%</div>
+            </div>
+            <div class="score-ring-lbl">Answer Quality</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Progress bars -->
+      <div class="card">
+        <div class="stat-row">
+          <div>
+            <div class="stat-item"><span class="stat-label">Communication</span><span class="stat-val" id="bar-comm-val">85%</span></div>
+            <div class="bar-wrap"><div class="bar-fill" id="bar-comm" style="width:85%; background:var(--lime);"></div></div>
+          </div>
+          <div>
+            <div class="stat-item"><span class="stat-label">Technical Knowledge</span><span class="stat-val" id="bar-tech-val">78%</span></div>
+            <div class="bar-wrap"><div class="bar-fill" id="bar-tech" style="width:78%; background:var(--cyan);"></div></div>
+          </div>
+          <div>
+            <div class="stat-item"><span class="stat-label">Confidence</span><span class="stat-val" id="bar-conf-val">88%</span></div>
+            <div class="bar-wrap"><div class="bar-fill" id="bar-conf" style="width:88%; background:var(--violet);"></div></div>
+          </div>
+          <div>
+            <div class="stat-item"><span class="stat-label">Answer Quality</span><span class="stat-val" id="bar-aq-val">82%</span></div>
+            <div class="bar-wrap"><div class="bar-fill" id="bar-aq" style="width:82%; background:var(--pink);"></div></div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px;">
+            <div class="int-stat"><div class="int-stat-val" id="val-pace" style="color:var(--lime);">Optimal</div><div class="int-stat-lbl">Speaking Pace</div></div>
+            <div class="int-stat"><div class="int-stat-val" id="val-eyecontact" style="color:var(--cyan);">Good</div><div class="int-stat-lbl">Eye Contact</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════ INTERVIEW INTEGRITY REPORT ═══════════════ -->
+  <div class="section">
+    <div class="section-label">Interview Integrity Report</div>
+    <div class="card" style="animation-delay:0.15s;">
+
+      <!-- Gauge Row -->
+      <div class="integrity-gauge" style="margin-bottom:20px;">
+        <div>
+          <div class="gauge-score high" id="integrity-score-val">100</div>
+          <div style="font-size:11px; color:var(--muted); margin-top:2px;">Integrity Score / 100</div>
+        </div>
+        <div style="flex:1;">
+          <div class="bar-wrap" style="height:10px; margin-bottom:8px;">
+            <div class="bar-fill" id="integrity-bar" style="width:100%; background: linear-gradient(90deg, var(--lime), var(--cyan));"></div>
+          </div>
+          <p id="integrity-summary-text" style="font-size:13px; color:#b0bad4; line-height:1.6;">
+            Most of the interview was completed without interruption.
+          </p>
+        </div>
+      </div>
+
+      <!-- Stat Grid -->
+      <div class="grid-4">
+        <div class="int-stat"><div class="int-stat-val" id="int-focus-count">0</div><div class="int-stat-lbl">Focus Losses</div></div>
+        <div class="int-stat"><div class="int-stat-val" id="int-face-count">0</div><div class="int-stat-lbl">Face Absences</div></div>
+        <div class="int-stat"><div class="int-stat-val" id="int-multi-count">0</div><div class="int-stat-lbl">Multi-Face Events</div></div>
+        <div class="int-stat"><div class="int-stat-val" id="int-away-sec">0s</div><div class="int-stat-lbl">Total Time Away</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════ AUTO-TERMINATION SECTION ═══════════════ -->
+  <div class="section" id="auto-term-section" style="display:none;">
+    <div class="section-label">Session Termination Details</div>
+    <div class="auto-term-section">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+        <div style="font-size:28px;">🔴</div>
+        <div>
+          <div style="font-family:'Outfit',sans-serif; font-size:17px; font-weight:800; color:#fbcfe8;">Interview Auto-Terminated</div>
+          <div style="font-size:13px; color:var(--muted); margin-top:2px;" id="term-reason">Prolonged absence from the interview window.</div>
+        </div>
+      </div>
+      <div class="timeline" id="termination-timeline">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ EVENT LOG TIMELINE ═══════════════ -->
+  <div class="section">
+    <div class="section-label">Event Log Timeline</div>
+    <div class="card" style="animation-delay:0.2s;">
+      <div class="timeline" id="event-timeline">
+        <div style="font-size:13px; color:var(--muted); text-align:center; padding:20px 0;">No events recorded during this session.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ AI STRENGTHS & IMPROVEMENTS ═══════════════ -->
+  <div class="section">
+    <div class="section-label">AI-Generated Feedback</div>
+    <div class="grid-2">
+
+      <!-- Strengths -->
+      <div class="card" style="animation-delay:0.25s;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <span style="font-size:18px;">✨</span>
+          <span style="font-family:'Outfit',sans-serif; font-size:15px; font-weight:800; color:#fff;">Key Strengths</span>
+        </div>
+        <div class="feedback-card" id="strengths-list">
+          <div class="feedback-item"><span class="fi-dot" style="background:var(--lime);"></span><span>Clear and structured communication throughout the interview.</span></div>
+          <div class="feedback-item"><span class="fi-dot" style="background:var(--lime);"></span><span>Strong project articulation with relevant technical context.</span></div>
+          <div class="feedback-item"><span class="fi-dot" style="background:var(--lime);"></span><span>Good understanding of core engineering fundamentals.</span></div>
+        </div>
+      </div>
+
+      <!-- Improvements -->
+      <div class="card" style="animation-delay:0.3s;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <span style="font-size:18px;">🎯</span>
+          <span style="font-family:'Outfit',sans-serif; font-size:15px; font-weight:800; color:#fff;">Areas for Improvement</span>
+        </div>
+        <div class="feedback-card" id="improvements-list" style="border-color:rgba(244,114,182,0.2);">
+          <div class="feedback-item"><span class="fi-dot" style="background:var(--pink);"></span><span>Provide more structured answers using the STAR framework.</span></div>
+          <div class="feedback-item"><span class="fi-dot" style="background:var(--pink);"></span><span>Deepen technical explanations with concrete system-level examples.</span></div>
+          <div class="feedback-item"><span class="fi-dot" style="background:var(--pink);"></span><span>Improve depth when discussing architecture trade-offs at scale.</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════ AI RECOMMENDATIONS ═══════════════ -->
+  <div class="section">
+    <div class="section-label">AI Recommendations</div>
+    <div class="card" style="animation-delay:0.35s;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+        <span style="font-size:20px;">🤖</span>
+        <span style="font-family:'Outfit',sans-serif; font-size:15px; font-weight:800;">Suggested Learning Resources</span>
+      </div>
+      <div id="recommendations-list" style="display:flex; flex-direction:column; gap:10px;">
+        <div class="feedback-item"><span class="fi-dot" style="background:var(--cyan);"></span><span style="color:#c8d0e8;">Study distributed systems design patterns — especially CAP theorem, eventual consistency and saga patterns.</span></div>
+        <div class="feedback-item"><span class="fi-dot" style="background:var(--cyan);"></span><span style="color:#c8d0e8;">Practice the STAR (Situation, Task, Action, Result) method for behavioral questions.</span></div>
+        <div class="feedback-item"><span class="fi-dot" style="background:var(--cyan);"></span><span style="color:#c8d0e8;">Review database sharding, indexing strategies and zero-downtime migration patterns.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
+    <button class="action-btn primary" onclick="window.print()">📄 Download Report</button>
+    <button class="action-btn secondary" onclick="window.location.href='index.html'">← New Interview</button>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const raw = localStorage.getItem('prepPilotAnalyticsReport');
+  const report = raw ? JSON.parse(raw) : null;
+
+  // ── Helpers ──────────────────────────────────────────────
+  function fmt(s) { if (!s) return '—'; const m = Math.floor(s / 60), sec = s % 60; return `${m}m ${sec}s`; }
+  function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+  function setHTML(id, val) { const el = document.getElementById(id); if (el) el.innerHTML = val; }
+  function setWidth(id, w) { const el = document.getElementById(id); if (el) el.style.width = w + '%'; }
+  function setColor(id, c) { const el = document.getElementById(id); if (el) el.style.color = c; }
+
+  function integrityColor(score) {
+    if (score >= 80) return 'var(--lime)';
+    if (score >= 60) return 'var(--amber)';
+    return 'var(--pink)';
+  }
+
+  function integrityGradeClass(score) {
+    if (score >= 80) return 'high';
+    if (score >= 60) return 'mid';
+    return 'low';
+  }
+
+  function integrityText(rep, status) {
+    if (status === 'AUTO_TERMINATED') return 'The interview was ended automatically due to prolonged absence from the interview window. Repeated or prolonged interview interruption was detected.';
+    if (!rep) return 'No integrity events were recorded during this session.';
+    const score = rep.integrityScore ?? 100;
+    const away  = rep.totalTimeAwaySeconds ?? 0;
+    const focus = rep.focusLossCount ?? 0;
+    if (score >= 90 && away < 5) return 'Most of the interview was completed without interruption. Excellent session integrity maintained throughout.';
+    if (score >= 75) return `A few observable signals were detected (${focus} focus loss event${focus !== 1 ? 's' : ''}, ${away}s away total). These are logged for reference.`;
+    return `Repeated interview interruptions were detected (${focus} focus loss events, ${away}s total time away). These signals have been logged into this report.`;
+  }
+
+  function severityDotClass(sev) {
+    const m = { INFO:'info', MINOR:'minor', WARNING:'warning', CONCERN:'concern', CRITICAL:'critical' };
+    return m[sev] || 'info';
+  }
+
+  function friendlyEventName(type) {
+    const m = {
+      WINDOW_FOCUS_LOST: 'Interview window lost focus',
+      WINDOW_FOCUS_RETURNED: 'Candidate returned to interview',
+      FACE_NOT_DETECTED: 'Face temporarily not detected in camera',
+      FACE_RETURNED: 'Face returned to camera frame',
+      MULTIPLE_FACES_DETECTED: 'Multiple people detected in camera view',
+      FULLSCREEN_EXIT: 'Fullscreen mode exited',
+      REPEATED_INTERRUPTION: 'Repeated interview interruption detected',
+      AUTO_TERMINATED: 'Interview automatically ended',
+      INTERVIEW_COMPLETED: 'Interview session completed',
+      ATTENTION_DRIFT: 'Attention drift signal detected',
+    };
+    return m[type] || type.replace(/_/g, ' ');
+  }
+
+  // ── If no report, use sensible defaults ───────────────────
+  if (!report) {
+    setText('subtitle-text', 'Demo view — no live session data found.');
+    return;
+  }
+
+  const meta   = report.sessionMeta   || {};
+  const perf   = report.performance   || {};
+  const intRep = report.integrity     || {};
+  const isTerminated = (meta.status === 'AUTO_TERMINATED');
+
+  // ── Status Banner ────────────────────────────────────────
+  if (isTerminated) {
+    document.getElementById('status-banner').className = 'status-banner terminated';
+    setText('status-icon', '🔴');
+    setText('status-title', 'Interview Auto-Terminated');
+    setText('status-subtitle', meta.terminationReason || 'Prolonged absence from the interview window.');
+  }
+
+  // ── Summary ───────────────────────────────────────────────
+  setText('sum-status', isTerminated ? 'Auto-Terminated' : 'Completed');
+  setColor('sum-status', isTerminated ? 'var(--pink)' : 'var(--lime)');
+  setText('sum-duration', fmt(meta.durationSeconds));
+  setText('sum-questions', `${meta.questionsAttempted ?? '—'} / ${meta.totalQuestions ?? '—'}`);
+  setText('sum-score', perf.overallScore ?? 82);
+  setText('subtitle-text', `${meta.candidateName || 'Candidate'} · ${meta.targetRole || ''} · ${meta.targetCompany || ''}`);
+
+  // ── Performance Bars & Rings ──────────────────────────────
+  const comm = perf.communication      ?? 85;
+  const tech = perf.technicalKnowledge ?? 78;
+  const conf = perf.confidence         ?? 88;
+  const aq   = perf.answerQuality      ?? 82;
+
+  setText('ring-comm', comm + '%'); setText('bar-comm-val', comm + '%'); setWidth('bar-comm', comm);
+  setText('ring-tech', tech + '%'); setText('bar-tech-val', tech + '%'); setWidth('bar-tech', tech);
+  setText('ring-conf', conf + '%'); setText('bar-conf-val', conf + '%'); setWidth('bar-conf', conf);
+  setText('ring-aq',   aq   + '%'); setText('bar-aq-val',   aq   + '%'); setWidth('bar-aq',   aq);
+  setText('val-pace',  perf.speakingPace  || 'Optimal');
+  setText('val-eyecontact', perf.eyeContact || 'Good');
+
+  // ── Integrity ─────────────────────────────────────────────
+  const iscore = intRep.integrityScore ?? 100;
+  const iscoreEl = document.getElementById('integrity-score-val');
+  if (iscoreEl) { iscoreEl.textContent = iscore; iscoreEl.className = `gauge-score ${integrityGradeClass(iscore)}`; }
+  setWidth('integrity-bar', iscore);
+  document.getElementById('integrity-bar').style.background = `linear-gradient(90deg, ${integrityColor(iscore)}, var(--cyan))`;
+  setText('integrity-summary-text', integrityText(intRep, meta.status));
+  setText('int-focus-count', intRep.focusLossCount ?? 0);
+  setText('int-face-count',  intRep.faceAbsentCount ?? 0);
+  setText('int-multi-count', intRep.multifaceCount ?? 0);
+  setText('int-away-sec',   `${intRep.totalTimeAwaySeconds ?? 0}s`);
+
+  // ── Auto-Termination Section ─────────────────────────────
+  if (isTerminated) {
+    document.getElementById('auto-term-section').style.display = 'block';
+    setText('term-reason', meta.terminationReason || 'Prolonged absence from the interview window.');
+    const termEvents = (intRep.eventLog || []).filter(e =>
+      ['WINDOW_FOCUS_LOST','WINDOW_FOCUS_RETURNED','AUTO_TERMINATED','REPEATED_INTERRUPTION'].includes(e.eventType)
+    );
+    const tlEl = document.getElementById('termination-timeline');
+    if (tlEl) {
+      if (termEvents.length === 0) {
+        tlEl.innerHTML = '<div style="font-size:13px; color:var(--muted);">No detailed event data available.</div>';
+      } else {
+        tlEl.innerHTML = termEvents.map(e => `
+          <div class="timeline-item">
+            <div class="timeline-ts">${e.timestamp}</div>
+            <div class="timeline-dot ${severityDotClass(e.severity)}"></div>
+            <div class="timeline-content">
+              <div class="timeline-type">${friendlyEventName(e.eventType)}</div>
+              ${e.durationMs ? `<div class="timeline-detail">Duration: ${Math.round(e.durationMs/1000)}s</div>` : ''}
+            </div>
+            <span class="sev-badge ${e.severity}">${e.severity}</span>
+          </div>`).join('');
+      }
+    }
+  }
+
+  // ── Event Log ─────────────────────────────────────────────
+  const evLog = intRep.eventLog || [];
+  const timelineEl = document.getElementById('event-timeline');
+  if (timelineEl) {
+    if (evLog.length === 0) {
+      timelineEl.innerHTML = '<div style="font-size:13px; color:var(--muted); text-align:center; padding:20px 0;">No integrity events recorded. Clean session! 🎉</div>';
+    } else {
+      timelineEl.innerHTML = evLog.map(e => `
+        <div class="timeline-item">
+          <div class="timeline-ts">${e.timestamp}</div>
+          <div class="timeline-dot ${severityDotClass(e.severity)}"></div>
+          <div class="timeline-content">
+            <div class="timeline-type">${friendlyEventName(e.eventType)}</div>
+            <div class="timeline-detail">Integrity after: ${e.integrityScoreAfter}/100${e.durationMs ? ` · Away: ${Math.round(e.durationMs/1000)}s` : ''}</div>
+          </div>
+          <span class="sev-badge ${e.severity}">${e.severity}</span>
+        </div>`).join('');
+    }
+  }
+
+  // ── AI Strengths ──────────────────────────────────────────
+  const strengths = perf.strengths || [];
+  if (strengths.length > 0) {
+    setHTML('strengths-list', strengths.map(s =>
+      `<div class="feedback-item"><span class="fi-dot" style="background:var(--lime);"></span><span>${s}</span></div>`
+    ).join(''));
+  }
+
+  const improvements = perf.improvements || [];
+  if (improvements.length > 0) {
+    setHTML('improvements-list', improvements.map(i =>
+      `<div class="feedback-item"><span class="fi-dot" style="background:var(--pink);"></span><span>${i}</span></div>`
+    ).join(''));
+  }
+
+  const recs = perf.aiRecommendations || [];
+  if (recs.length > 0) {
+    setHTML('recommendations-list', recs.map(r =>
+      `<div class="feedback-item"><span class="fi-dot" style="background:var(--cyan);"></span><span style="color:#c8d0e8;">${r}</span></div>`
+    ).join(''));
+  }
+
+})();
+</script>
+</body>
+</html>
