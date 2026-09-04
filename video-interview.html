@@ -591,6 +591,55 @@ header {
       msgBox.style.color = '#86efac';
     }
   };
+
+  // ── START INTERVIEW fallback ──────────────────────────────────
+  // This runs even if the ES module fails to load.
+  // The ES module will override this with the full version on DOMContentLoaded.
+  window._startInterview = async function() {
+    // Dismiss modal
+    var modal = document.getElementById('consent-modal');
+    if (modal) modal.classList.remove('active');
+
+    // Attach stream to main interview video
+    var mainVid = document.getElementById('webcam-feed');
+    var img     = document.getElementById('candidate-static-img');
+    var stream  = window._mediaStream;
+
+    if (stream && mainVid) {
+      mainVid.srcObject = stream;
+      mainVid.muted = true;
+      mainVid.style.display = 'block';
+      mainVid.play().catch(function(){});
+      if (img) img.style.display = 'none';
+    }
+
+    // Fallback greeting via native TTS
+    var cName = localStorage.getItem('candidateName') || 'there';
+    var greeting = "Welcome " + cName + "! I'm Dr. Aris Thorne from PrepPilot AI. Let's begin your interview. Please start by introducing yourself and describing your most impactful project.";
+
+    var captionEl = document.getElementById('caption-text');
+    if (captionEl) captionEl.textContent = '"' + greeting + '"';
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      var utt = new SpeechSynthesisUtterance(greeting);
+      utt.rate = 0.92; utt.pitch = 1.0; utt.volume = 1.0;
+      var voices = window.speechSynthesis.getVoices();
+      var preferred = voices.find(function(v) { return v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel'); });
+      if (preferred) utt.voice = preferred;
+      window.speechSynthesis.speak(utt);
+    }
+  };
+
+  // Wire start button immediately (doesn't wait for ES module)
+  document.addEventListener('DOMContentLoaded', function() {
+    var startBtn = document.getElementById('start-interview-btn');
+    if (startBtn) {
+      startBtn.addEventListener('click', function() {
+        window._startInterview && window._startInterview();
+      });
+    }
+  });
 })();
 </script>
 
@@ -1127,8 +1176,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Start Interview Button
-  document.getElementById('start-interview-btn').addEventListener('click', async () => {
+  // Start Interview — defined as named function so window._startInterview can call it
+  const _doStartInterview = async () => {
+
     try { await document.documentElement.requestFullscreen(); } catch(e){}
 
     const modal = document.getElementById('consent-modal');
@@ -1230,8 +1280,13 @@ window.addEventListener('DOMContentLoaded', () => {
       speakQuestion(currentQText);
     }
 
+
     startSessionTimer();
-  });
+  };
+
+  // Override the plain-script fallback with the full ES module version
+  window._startInterview = _doStartInterview;
+
 
   document.getElementById('end-interview-btn').addEventListener('click', finishInterviewSession);
   document.getElementById('view-analysis-btn').addEventListener('click', () => window.navigateToAnalysis());
