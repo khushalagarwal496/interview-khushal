@@ -853,39 +853,44 @@ window.addEventListener('DOMContentLoaded', () => {
   const round = localStorage.getItem('interviewType') || 'Technical';
   document.getElementById('candidate-tag-name').textContent = `${cName} (You)`;
   document.getElementById('candidate-role-tag').textContent = `Candidate · ${role}`;
+  const dockTag = document.getElementById('dock-round-tag');
+  if (dockTag) dockTag.textContent = `• ${round}`;
+
+  const modalVid = document.getElementById('modal-webcam-feed');
+  const mainVid = document.getElementById('webcam-feed');
+  const canvasOverlay = document.getElementById('landmark-canvas');
+  const permBtn = document.getElementById('request-perm-btn');
+  const msgBox = document.getElementById('id-verification-msg');
+
   // Setup explicit media permissions and modal stream preview
   const setupMediaPermissions = async () => {
-    const modalVid = document.getElementById('modal-webcam-feed');
-    const mainVid = document.getElementById('webcam-feed');
-    const canvasOverlay = document.getElementById('landmark-canvas');
-    const permBtn = document.getElementById('request-perm-btn');
-    const msgBox = document.getElementById('id-verification-msg');
-
     try {
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true });
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       } catch (e1) {
-        console.warn('Video+Audio getUserMedia failed, trying video-only:', e1);
+        console.warn('Video+Audio getUserMedia failed, trying video only:', e1);
         try {
-          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        } catch (e2) {
-          console.warn('Video-only getUserMedia failed, trying default constraints:', e2);
           mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch (e2) {
+          console.warn('Video-only getUserMedia failed:', e2);
+          mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         }
       }
 
       if (mediaStream) {
         if (modalVid) {
           modalVid.srcObject = mediaStream;
+          modalVid.muted = true;
           try { await modalVid.play(); } catch(e){}
         }
         if (mainVid) {
           mainVid.srcObject = mediaStream;
+          mainVid.muted = true;
           try { await mainVid.play(); } catch(e){}
         }
 
         if (permBtn) {
-          permBtn.textContent = '✅ Camera Active';
+          permBtn.textContent = '✅ Camera & Mic Active';
           permBtn.style.background = 'rgba(74,222,128,0.15)';
           permBtn.style.borderColor = 'rgba(74,222,128,0.4)';
           permBtn.style.color = '#86efac';
@@ -909,13 +914,13 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch(err) {
       console.warn('Camera permission request error:', err);
       if (permBtn) {
-        permBtn.textContent = '⚠️ Click to Grant Camera Access';
+        permBtn.textContent = '⚠️ Enable Camera & Mic';
         permBtn.style.background = 'rgba(239,68,68,0.15)';
         permBtn.style.borderColor = 'rgba(239,68,68,0.4)';
         permBtn.style.color = '#fca5a5';
       }
       if (msgBox) {
-        msgBox.textContent = '⚠️ Camera permission is required for identity check. Please allow camera access in your browser.';
+        msgBox.textContent = '⚠️ Camera permission is required for identity check. Click "Enable Camera & Mic" or allow access in your browser.';
         msgBox.style.background = 'rgba(239,68,68,0.1)';
         msgBox.style.borderColor = 'rgba(239,68,68,0.3)';
         msgBox.style.color = '#fca5a5';
@@ -923,9 +928,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const reqPermBtn = document.getElementById('request-perm-btn');
-  if (reqPermBtn) {
-    reqPermBtn.addEventListener('click', setupMediaPermissions);
+  if (permBtn) {
+    permBtn.addEventListener('click', setupMediaPermissions);
   }
   setupMediaPermissions();
 
@@ -935,7 +939,6 @@ window.addEventListener('DOMContentLoaded', () => {
     verifyBtn.addEventListener('click', () => {
       const activeVid = modalVid || mainVid;
       const res = FaceDetectionService.captureSessionReference(activeVid);
-      const msgBox = document.getElementById('id-verification-msg');
       const snapImg = document.getElementById('modal-snapshot-preview');
       const snapBadge = document.getElementById('modal-snapshot-badge');
 
