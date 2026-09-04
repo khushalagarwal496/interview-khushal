@@ -1455,7 +1455,7 @@ async function handleResumeUpload(input) {
 
   // Try server API parse endpoints if available
   try {
-    const apiUrls = ['/api/resume/parse', 'http://localhost:3000/api/resume/parse'];
+    const apiUrls = ['/api/resume/parse'];
     for (const url of apiUrls) {
       try {
         const res = await fetch(url, {

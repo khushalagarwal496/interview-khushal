@@ -96,7 +96,7 @@ const IntegrityService = (() => {
   function _sendTelemetry(event) {
     if (!activeSessionId) return;
     try {
-      fetch('http://localhost:3000/api/interview/proctoring-event', {
+      fetch('/api/interview/proctoring-event', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

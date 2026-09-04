@@ -638,7 +638,7 @@ async function processCandidateAnswer(answerText) {
 
   document.getElementById('caption-text').textContent = 'AI is evaluating response & generating follow-up...';
   try {
-    const res = await fetch('http://localhost:3000/api/interview/next-question', {
+    const res = await fetch('/api/interview/next-question', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId, answer: answerText })
     });
@@ -716,7 +716,7 @@ async function finishInterviewSession() {
 
   let apiReport = {};
   try {
-    const res = await fetch('http://localhost:3000/api/interview/report', {
+    const res = await fetch('/api/interview/report', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId })
     });
@@ -793,61 +793,87 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('start-interview-btn').addEventListener('click', async () => {
     try { await document.documentElement.requestFullscreen(); } catch(e){}
 
-    document.getElementById('consent-modal').classList.remove('active');
+    const modal = document.getElementById('consent-modal');
+    if (modal) modal.classList.remove('active');
+
+    // Attempt Media Stream (Video + Audio) with Audio-only and Static fallbacks
+    const vid = document.getElementById('webcam-feed');
+    const canvasOverlay = document.getElementById('landmark-canvas');
+    const img = document.getElementById('candidate-static-img');
 
     try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      const vid = document.getElementById('webcam-feed');
-      const canvasOverlay = document.getElementById('landmark-canvas');
-      const img = document.getElementById('candidate-static-img');
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      } catch (videoErr) {
+        console.warn('Full media access failed, trying audio only:', videoErr);
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
 
-      vid.srcObject = mediaStream;
-      vid.style.display = 'block';
-      if (img) img.style.display = 'none';
-      isWebcamOn = true;
-      try { await vid.play(); } catch(e){}
+      if (mediaStream) {
+        if (vid && mediaStream.getVideoTracks().length > 0) {
+          vid.srcObject = mediaStream;
+          vid.style.display = 'block';
+          if (img) img.style.display = 'none';
+          isWebcamOn = true;
+          try { await vid.play(); } catch(e){}
 
-      // Start computer vision tracking & HUD overlay
-      await FaceDetectionService.init(vid, canvasOverlay, {
-        onStateChange: handleStateChange,
-        onWarning: (evt, extras) => {
-          showBannerMsg(`⚠️ Integrity Event: ${evt.replace(/_/g, ' ')}`, false);
+          // Start computer vision tracking & HUD overlay safely
+          try {
+            await FaceDetectionService.init(vid, canvasOverlay, {
+              onStateChange: handleStateChange,
+              onWarning: (evt, extras) => {
+                showBannerMsg(`⚠️ Integrity Event: ${evt.replace(/_/g, ' ')}`, false);
+              }
+            });
+          } catch (visionErr) {
+            console.warn('FaceDetectionService init warning:', visionErr);
+          }
+        } else {
+          showBannerMsg('🎙️ Microphone active. Camera feed unavailable — running in audio mode.', false);
         }
-      });
+      }
     } catch(err) {
-      alert('Camera or Microphone access was denied. Please allow camera access to start the interview.');
-      return;
+      console.warn('Media devices warning:', err);
+      showBannerMsg('⚠️ Camera & microphone access unavailable. Continuing in standard interview mode.', false);
     }
 
-    initSpeechRecognition();
+    try {
+      initSpeechRecognition();
+    } catch (srErr) {
+      console.warn('Speech recognition init warning:', srErr);
+    }
 
     // Start proctoring tab focus & countdown monitor
-    ProctoringService.init({
-      onTerminate: () => {
-        stopInterview();
-        window.navigateToAnalysis('AUTO_TERMINATED', 'Interview session ended due to prolonged absence from the interview window.');
-      },
-      onTick: (secs) => {
-        const overlay = document.getElementById('countdown-overlay');
-        const numEl = document.getElementById('countdown-number');
-        const lblEl = document.getElementById('countdown-label');
-        if (overlay) overlay.classList.add('active');
-        if (numEl) numEl.textContent = secs;
-        if (lblEl) lblEl.textContent = secs;
-      },
-      onReturn: (info) => {
-        const overlay = document.getElementById('countdown-overlay');
-        if (overlay) overlay.classList.remove('active');
-        showBannerMsg(`✅ Welcome back — you were away for ${info.durationSeconds}s. Session continues.`, false);
-      },
-      onWarn: (lvl, msg) => {
-        showBannerMsg(msg, lvl >= 3);
-      }
-    });
+    try {
+      ProctoringService.init({
+        onTerminate: () => {
+          stopInterview();
+          window.navigateToAnalysis('AUTO_TERMINATED', 'Interview session ended due to prolonged absence from the interview window.');
+        },
+        onTick: (secs) => {
+          const overlay = document.getElementById('countdown-overlay');
+          const numEl = document.getElementById('countdown-number');
+          const lblEl = document.getElementById('countdown-label');
+          if (overlay) overlay.classList.add('active');
+          if (numEl) numEl.textContent = secs;
+          if (lblEl) lblEl.textContent = secs;
+        },
+        onReturn: (info) => {
+          const overlay = document.getElementById('countdown-overlay');
+          if (overlay) overlay.classList.remove('active');
+          showBannerMsg(`✅ Welcome back — you were away for ${info.durationSeconds}s. Session continues.`, false);
+        },
+        onWarn: (lvl, msg) => {
+          showBannerMsg(msg, lvl >= 3);
+        }
+      });
+    } catch (procErr) {
+      console.warn('ProctoringService init warning:', procErr);
+    }
 
     // Start session API call
     try {
-      const res = await fetch('http://localhost:3000/api/interview/start', {
+      const res = await fetch('/api/interview/start', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId, candidateName: cName, jobRole: role,
@@ -859,12 +885,14 @@ window.addEventListener('DOMContentLoaded', () => {
         })
       });
       const data = await res.json();
-      if (data.success) {
+      if (data && data.success && data.greeting) {
         currentQText = data.greeting;
-        totalQuestions = data.totalQuestions;
+        totalQuestions = data.totalQuestions || 5;
         document.getElementById('caption-text').textContent = `"${currentQText}"`;
         document.getElementById('question-progress').textContent = `Question 1 / ${totalQuestions}`;
         speakQuestion(currentQText);
+      } else {
+        throw new Error('Invalid API response');
       }
     } catch(e) {
       currentQText = `Welcome ${cName}! I'm Dr. Aris Thorne. Let's begin. Please start by introducing yourself and describing your most impactful project.`;
