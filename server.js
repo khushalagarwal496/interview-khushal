@@ -308,6 +308,11 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 PrepPilot AI Engine running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 PrepPilot AI Engine running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
+
