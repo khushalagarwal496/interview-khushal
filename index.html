@@ -45,6 +45,12 @@ body {
 a { text-decoration: none; color: inherit; }
 img { display: block; max-width: 100%; }
 
+/* Custom Webkit Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(10, 13, 24, 0.6); }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 999px; border: 2px solid rgba(10, 13, 24, 0.6); }
+::-webkit-scrollbar-thumb:hover { background: var(--lime); }
+
 /* ─── CANVAS PARTICLE BG ────────────────────────────────────── */
 #particle-canvas {
   position: fixed;
@@ -271,12 +277,12 @@ nav.scrolled {
 
 /* ─── HERO ──────────────────────────────────────────────────── */
 .hero {
-  min-height: 100svh;
+  min-height: auto;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 48px;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(24px, 4vw, 48px);
   align-items: center;
-  padding: 120px 0 80px;
+  padding: clamp(90px, 12vh, 120px) 0 60px;
 }
 .hero-content { display: flex; flex-direction: column; gap: 0; }
 
@@ -427,7 +433,9 @@ h1 {
 /* ─── 3D HERO SCENE ─────────────────────────────────────────── */
 .hero-scene {
   position: relative;
-  height: 600px;
+  min-height: 440px;
+  height: auto;
+  max-width: 100%;
   perspective: 1400px;
   display: grid;
   place-items: center;
@@ -435,8 +443,8 @@ h1 {
 }
 .scene-glow {
   position: absolute;
-  width: 420px;
-  height: 420px;
+  width: min(420px, 90vw);
+  height: min(420px, 90vw);
   border-radius: 50%;
   background: radial-gradient(circle, rgba(157,143,255,0.3) 0%, rgba(103,232,249,0.12) 45%, transparent 70%);
   filter: blur(20px);
@@ -449,8 +457,9 @@ h1 {
 
 /* 3D Main Card */
 .card3d {
-  width: min(520px, 88vw);
-  height: 420px;
+  width: min(520px, 92vw);
+  max-width: 100%;
+  height: clamp(340px, 45vh, 420px);
   border: 1px solid rgba(255,255,255,0.1);
   border-top-color: rgba(255,255,255,0.18);
   border-radius: 32px;
@@ -1248,96 +1257,114 @@ footer {
 <div class="wrap">
 
 <!-- ══════════════ PRE-INTERVIEW CONFIGURATION MODAL ══════════════ -->
-<div id="preinterview-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(4,5,10,0.88);backdrop-filter:blur(24px);display:none;align-items:center;justify-content:center;padding:20px;">
-  <div style="width:min(620px,94vw);max-height:92vh;overflow-y:auto;background:#0a0d18;border:1px solid rgba(255,255,255,0.12);border-radius:28px;padding:32px;box-shadow:0 40px 120px rgba(0,0,0,0.8);display:flex;flex-direction:column;gap:20px;">
+<!-- ══════════════ PRE-INTERVIEW CONFIGURATION MODAL ══════════════ -->
+<div id="preinterview-modal" style="position:fixed;inset:0;z-index:9999;background:rgba(4,5,10,0.86);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);display:none;align-items:center;justify-content:center;padding:16px;">
+  <div style="width:min(600px, 95vw);max-height:90vh;background:#090c17;border:1px solid rgba(255,255,255,0.12);border-radius:24px;box-shadow:0 30px 100px rgba(0,0,0,0.9), 0 0 40px rgba(157,143,255,0.1);display:flex;flex-direction:column;overflow:hidden;">
     
-    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <!-- Modal Header -->
+    <div style="padding:20px 24px 16px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:rgba(14,18,32,0.6);">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--lime),#7dfcc5);display:grid;place-items:center;font-size:18px;color:#060810;box-shadow:0 0 16px rgba(200,255,94,0.3)">⚙️</div>
+        <div>
+          <h2 style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:#fff;line-height:1.2">Calibrate Your AI Interview</h2>
+          <p style="font-size:12px;color:var(--muted);margin-top:2px">Configure candidate parameters for adaptive AI questions.</p>
+        </div>
+      </div>
+      <button onclick="document.getElementById('preinterview-modal').style.display='none'" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--muted);font-size:18px;cursor:pointer;display:grid;place-items:center;transition:all 0.2s" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.color='var(--muted)';this.style.background='rgba(255,255,255,0.06)'">&times;</button>
+    </div>
+
+    <!-- Modal Scrollable Body -->
+    <div style="padding:20px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;flex:1;">
+      
+      <!-- Resume Upload Dropzone -->
+      <div id="pdf-dropzone" onclick="document.getElementById('resume-file-input').click()" style="padding:14px;border:1.5px dashed rgba(200,255,94,0.4);background:rgba(200,255,94,0.04);border-radius:16px;text-align:center;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--lime)';this.style.background='rgba(200,255,94,0.08)'" onmouseout="this.style.borderColor='rgba(200,255,94,0.4)';this.style.background='rgba(200,255,94,0.04)'">
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px">
+          <span style="font-size:22px">📄</span>
+          <div style="text-align:left">
+            <div style="font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;color:var(--lime)">Upload Resume (PDF / DOCX)</div>
+            <div style="font-size:11px;color:var(--muted)">Click or drop file to auto-fill all profile parameters</div>
+          </div>
+        </div>
+        <input type="file" id="resume-file-input" accept=".pdf,.doc,.docx,.txt" style="display:none" onchange="handleResumeUpload(this)" />
+      </div>
+      <div id="parse-loading" style="display:none;font-size:12px;color:var(--cyan);text-align:center;font-weight:600">⚡ AI is parsing resume & auto-filling profile fields...</div>
+
+      <!-- Candidate Name -->
       <div>
-        <h2 style="font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:#fff">⚙️ Calibrate Your AI Interview</h2>
-        <p style="font-size:13px;color:var(--muted);margin-top:4px">Configure candidate parameters to adapt the AI recruiter's questions.</p>
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Candidate Name</label>
+        <input type="text" id="cfg-name" value="Sarah Jenkins" style="width:100%;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:13.5px;outline:none;" onfocus="this.style.borderColor='var(--lime)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'" />
       </div>
-      <button onclick="document.getElementById('preinterview-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer">&times;</button>
-    </div>
 
-    <!-- PDF Resume Dropzone -->
-    <div id="pdf-dropzone" onclick="document.getElementById('resume-file-input').click()" style="padding:16px;border:2px dashed rgba(200,255,94,0.4);background:rgba(200,255,94,0.05);border-radius:16px;text-align:center;cursor:pointer;transition:all 0.2s">
-      <div style="font-size:26px;margin-bottom:4px">📄</div>
-      <div style="font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:var(--lime)">Upload Resume (PDF / DOCX)</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px">Click or drop file to auto-fill all candidate parameters</div>
-      <input type="file" id="resume-file-input" accept=".pdf,.doc,.docx,.txt" style="display:none" onchange="handleResumeUpload(this)" />
-    </div>
-    <div id="parse-loading" style="display:none;font-size:12px;color:var(--cyan);text-align:center;font-weight:600">⚡ AI is parsing resume & auto-filling profile fields...</div>
+      <!-- Target Role & Experience -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Target Job Role</label>
+          <select id="cfg-role" style="width:100%;padding:10px 12px;border-radius:10px;background:#0e1220;border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:12.5px;outline:none;" onfocus="this.style.borderColor='var(--lime)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+            <option value="Full Stack Developer" selected>Full Stack Developer</option>
+            <option value="Frontend Engineer">Frontend Engineer</option>
+            <option value="Backend Software Engineer">Backend Software Engineer</option>
+            <option value="Data Analyst / Engineer">Data Analyst & AI Engineer</option>
+            <option value="Product Manager">Product Manager</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Experience Level</label>
+          <select id="cfg-exp" style="width:100%;padding:10px 12px;border-radius:10px;background:#0e1220;border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:12.5px;outline:none;" onfocus="this.style.borderColor='var(--lime)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+            <option value="Entry Level (0-2 yrs)">Entry Level (0-2 yrs)</option>
+            <option value="Mid Level (2-5 yrs)" selected>Mid Level (2-5 yrs)</option>
+            <option value="Senior Engineer (5+ yrs)">Senior Engineer (5+ yrs)</option>
+            <option value="Lead / Staff Architect">Lead / Staff Architect</option>
+          </select>
+        </div>
+      </div>
 
-    <!-- Candidate Name -->
-    <div>
-      <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Candidate Name</label>
-      <input type="text" id="cfg-name" value="Sarah Jenkins" style="width:100%;padding:12px 16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:14px;" />
-    </div>
+      <!-- Interview Round & Target Company -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Interview Round</label>
+          <select id="cfg-round" style="width:100%;padding:10px 12px;border-radius:10px;background:#0e1220;border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:12.5px;outline:none;" onfocus="this.style.borderColor='var(--lime)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+            <option value="Technical & Architecture" selected>Technical & Architecture</option>
+            <option value="System Design & Scale">System Design & Scale</option>
+            <option value="Project Defense">Project Defense</option>
+            <option value="DSA & Problem Solving">DSA & Coding</option>
+            <option value="HR & Cultural Fit">HR & Behavioral</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Target Company</label>
+          <select id="cfg-company" style="width:100%;padding:10px 12px;border-radius:10px;background:#0e1220;border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:12.5px;outline:none;" onfocus="this.style.borderColor='var(--lime)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+            <option value="Tech Giant (FAANG)" selected>Tech Giant (FAANG)</option>
+            <option value="High-Growth Startup">High-Growth Startup</option>
+            <option value="Enterprise FinTech">Enterprise FinTech</option>
+            <option value="E-Commerce Platform">E-Commerce Platform</option>
+          </select>
+        </div>
+      </div>
 
-    <!-- Target Role & Experience -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <!-- Resume / Project Highlights -->
       <div>
-        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Target Job Role</label>
-        <select id="cfg-role" style="width:100%;padding:12px 14px;border-radius:12px;background:#0e1220;border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:13px;">
-          <option value="Full Stack Developer" selected>Full Stack Developer</option>
-          <option value="Frontend Engineer">Frontend Engineer</option>
-          <option value="Backend Software Engineer">Backend Software Engineer</option>
-          <option value="Data Analyst / Engineer">Data Analyst & AI Engineer</option>
-          <option value="Product Manager">Product Manager</option>
-        </select>
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Resume / Project Highlights</label>
+        <textarea id="cfg-resume" rows="2" style="width:100%;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:12.5px;resize:none;outline:none;" onfocus="this.style.borderColor='var(--lime)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">Campus Bridge platform, React.js, Node.js microservices, Firebase Auth, PostgreSQL</textarea>
       </div>
+
+      <!-- Difficulty Calibrator -->
       <div>
-        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Experience Level</label>
-        <select id="cfg-exp" style="width:100%;padding:12px 14px;border-radius:12px;background:#0e1220;border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:13px;">
-          <option value="Entry Level (0-2 yrs)">Entry Level (0-2 yrs)</option>
-          <option value="Mid Level (2-5 yrs)" selected>Mid Level (2-5 yrs)</option>
-          <option value="Senior Engineer (5+ yrs)">Senior Engineer (5+ yrs)</option>
-          <option value="Lead / Staff Architect">Lead / Staff Architect</option>
-        </select>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Initial Difficulty Level</label>
+          <span id="diff-val" style="font-size:12px;font-weight:800;color:var(--lime)">Level 3 (Adaptive)</span>
+        </div>
+        <input type="range" id="cfg-diff" min="1" max="5" value="3" oninput="document.getElementById('diff-val').textContent = 'Level ' + this.value + ' (Adaptive)'" style="width:100%;accent-color:var(--lime);cursor:pointer;" />
       </div>
+
     </div>
 
-    <!-- Interview Type & Target Company -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div>
-        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Interview Round</label>
-        <select id="cfg-round" style="width:100%;padding:12px 14px;border-radius:12px;background:#0e1220;border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:13px;">
-          <option value="Technical & Architecture" selected>Technical & Architecture</option>
-          <option value="System Design & Scale">System Design & Scale</option>
-          <option value="Project Defense">Project Defense</option>
-          <option value="DSA & Problem Solving">DSA & Coding</option>
-          <option value="HR & Cultural Fit">HR & Behavioral</option>
-        </select>
-      </div>
-      <div>
-        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Target Company</label>
-        <select id="cfg-company" style="width:100%;padding:12px 14px;border-radius:12px;background:#0e1220;border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:13px;">
-          <option value="Tech Giant (FAANG)" selected>Tech Giant (FAANG)</option>
-          <option value="High-Growth Startup">High-Growth Startup</option>
-          <option value="Enterprise FinTech">Enterprise FinTech</option>
-          <option value="E-Commerce Platform">E-Commerce Platform</option>
-        </select>
-      </div>
+    <!-- Modal Sticky Footer Button -->
+    <div style="padding:14px 24px 18px;border-top:1px solid rgba(255,255,255,0.08);background:rgba(14,18,32,0.8);flex-shrink:0;">
+      <button onclick="launchConfiguredInterview()" style="width:100%;height:48px;border-radius:999px;border:none;background:var(--lime);color:#060810;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 8px 30px rgba(200,255,94,0.35);transition:all 0.25s;" onmouseover="this.style.background='#b5f542';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='var(--lime)';this.style.transform='none'">
+        Launch AI Video Session 🚀
+      </button>
     </div>
 
-    <!-- Resume / Key Projects Highlights -->
-    <div>
-      <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Resume / Project Highlights</label>
-      <textarea id="cfg-resume" rows="2" style="width:100%;padding:12px 16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:13px;resize:none;">Campus Bridge platform, React.js, Node.js microservices, Firebase Auth, PostgreSQL</textarea>
-    </div>
-
-    <!-- Difficulty Calibrator -->
-    <div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Initial Difficulty Level</label>
-        <span id="diff-val" style="font-size:12px;font-weight:800;color:var(--lime)">Level 3 (Adaptive)</span>
-      </div>
-      <input type="range" id="cfg-diff" min="1" max="5" value="3" oninput="document.getElementById('diff-val').textContent = 'Level ' + this.value + ' (Adaptive)'" style="width:100%;accent-color:var(--lime)" />
-    </div>
-
-    <button onclick="launchConfiguredInterview()" style="width:100%;padding:16px;border-radius:999px;border:none;background:var(--lime);color:#060810;font-family:'Outfit',sans-serif;font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 8px 30px rgba(200,255,94,0.35);">
-      Launch AI Video Session 🚀
-    </button>
   </div>
 </div>
 
@@ -1516,11 +1543,8 @@ function launchConfiguredInterview() {
     <p class="hero-desc">Upload your resume, choose a target role, and get an adaptive AI interview that remembers your weak spots, pushes your projects, and tells you exactly what to fix next.</p>
     <div class="hero-actions">
       <a class="btn-primary" href="javascript:void(0)" onclick="openPreinterviewSetup()" id="hero-cta">
-        Calibrate AI Session
+        📹 Start AI Video Call
         <span class="btn-arrow">↗</span>
-      </a>
-      <a class="btn-secondary" href="javascript:void(0)" onclick="openPreinterviewSetup()" style="border-color:rgba(103,232,249,0.3);background:rgba(103,232,249,0.08);color:var(--cyan)">
-        📹 AI Video Call ↗
       </a>
       <a class="btn-secondary" href="#features">
         Explore features

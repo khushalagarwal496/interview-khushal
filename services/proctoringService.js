@@ -1,8 +1,9 @@
 /**
  * PrepPilot AI Interview — Proctoring Service
- * Monitors browser visibility, window focus, and fullscreen state.
- * Implements a 10-second countdown return timer with auto-termination.
+ * Monitors browser visibility, window focus, and fullscreen mode.
+ * Enforces tab focus return countdown with auto-termination handling.
  */
+import PROCTORING_CONFIG from './proctoringConfig.js';
 import IntegrityService from './integrityService.js';
 
 const ProctoringService = (() => {
@@ -29,12 +30,12 @@ const ProctoringService = (() => {
     onReturnDetected = onReturn;
     onWarning = onWarn;
 
-    // Tab visibility
+    // Tab visibility change
     document.addEventListener('visibilitychange', _handleVisibilityChange);
     // Window focus/blur
-    window.addEventListener('blur',  _handleFocusLost);
+    window.addEventListener('blur', _handleFocusLost);
     window.addEventListener('focus', _handleFocusReturn);
-    // Fullscreen exit
+    // Fullscreen mode change
     document.addEventListener('fullscreenchange', _handleFullscreenChange);
   }
 
@@ -65,7 +66,7 @@ const ProctoringService = (() => {
 
     IntegrityService.logEvent('WINDOW_FOCUS_LOST', { durationMs: 0 });
     _fireWarning();
-    _startCountdown(10);
+    _startCountdown(PROCTORING_CONFIG.tabAbsenceCountdownSeconds || 10);
   }
 
   function _onReturn() {
@@ -75,7 +76,7 @@ const ProctoringService = (() => {
 
     _cancelCountdown();
 
-    // Patch previous WINDOW_FOCUS_LOST event duration
+    // Update the duration of the previous WINDOW_FOCUS_LOST event
     const report = IntegrityService.getReport();
     const lastFocus = [...report.eventLog].reverse().find(e => e.eventType === 'WINDOW_FOCUS_LOST');
     if (lastFocus) lastFocus.durationMs = durationMs;

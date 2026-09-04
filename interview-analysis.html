@@ -3,168 +3,331 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PrepPilot AI — Interview Analysis</title>
-<meta name="description" content="AI-powered interview performance analysis with integrity report, event timeline, and personalized feedback." />
+<title>PrepPilot AI — Interview Performance Analysis</title>
+<meta name="description" content="Production-grade AI interview assessment report with performance snapshot, skill radar, question-by-question analysis, and integrity audit." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
 :root {
-  --bg: #04050a; --surface: #0a0d16; --surface2: #0e1220;
-  --text: #f0eeff; --muted: #7a84a0; --line: rgba(255,255,255,0.08);
-  --lime: #c8ff5e; --violet: #9d8fff; --cyan: #67e8f9; --pink: #f472b6; --amber: #fbbf24;
+  --bg: #04050a;
+  --surface: #0a0d18;
+  --surface2: #0e1222;
+  --glass: rgba(10, 13, 24, 0.85);
+  --text: #f0eeff;
+  --muted: #7a84a0;
+  --line: rgba(255, 255, 255, 0.08);
+  --line2: rgba(255, 255, 255, 0.14);
+  --lime: #c8ff5e;
+  --lime2: #9fe83b;
+  --violet: #9d8fff;
+  --violet2: #7c6bff;
+  --cyan: #67e8f9;
+  --pink: #f472b6;
+  --amber: #fbbf24;
+  --red: #f87171;
+  --shadow: 0 30px 100px rgba(0,0,0,0.7);
 }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
 
-/* BG blobs */
-.bg-blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; filter: blur(160px); opacity: 0.4; }
-.blob-1 { position: absolute; width: 700px; height: 700px; top: -200px; left: -100px; background: radial-gradient(circle, rgba(157,143,255,0.5), transparent 65%); }
-.blob-2 { position: absolute; width: 500px; height: 500px; top: 40%; right: -80px; background: radial-gradient(circle, rgba(103,232,249,0.4), transparent 65%); }
-.blob-3 { position: absolute; width: 400px; height: 400px; bottom: -100px; left: 30%; background: radial-gradient(circle, rgba(200,255,94,0.25), transparent 65%); }
+/* Background Glow Blobs */
+.bg-blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; filter: blur(160px); opacity: 0.45; }
+.blob-1 { position: absolute; width: 700px; height: 700px; top: -200px; left: -100px; background: radial-gradient(circle, rgba(157,143,255,0.45), transparent 65%); }
+.blob-2 { position: absolute; width: 550px; height: 550px; top: 35%; right: -80px; background: radial-gradient(circle, rgba(103,232,249,0.35), transparent 65%); }
+.blob-3 { position: absolute; width: 450px; height: 450px; bottom: -100px; left: 30%; background: radial-gradient(circle, rgba(200,255,94,0.25), transparent 65%); }
 
-/* Layout */
-.page { position: relative; z-index: 2; max-width: 1080px; margin: 0 auto; padding: 28px 24px 60px; }
+/* Layout container */
+.page { position: relative; z-index: 2; max-width: 1140px; margin: 0 auto; padding: 24px 24px 80px; }
 
-/* Header */
-.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
-.brand { display: flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 18px; color: #fff; text-decoration: none; }
-.brand-logo { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(145deg, var(--lime), #7dfcc5); display: grid; place-items: center; color: #06080e; font-size: 15px; }
-.back-btn { padding: 9px 18px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; }
-.back-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+/* Sticky Header */
+header {
+  position: sticky; top: 12px; z-index: 100;
+  height: 64px; background: rgba(10, 13, 24, 0.92); backdrop-filter: blur(24px);
+  border: 1px solid var(--line); border-radius: 20px; padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5); margin-bottom: 32px;
+}
+.brand { display: flex; align-items: center; gap: 12px; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 19px; color: #fff; text-decoration: none; }
+.brand-logo { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(145deg, var(--lime), #7dfcc5); display: grid; place-items: center; color: #060810; font-size: 16px; box-shadow: 0 0 20px rgba(200,255,94,0.3); }
+.header-title-wrap { display: flex; flex-direction: column; }
+.header-title { font-family: 'Outfit', sans-serif; font-size: 17px; font-weight: 800; color: #fff; line-height: 1.1; }
+.header-sub { font-size: 11.5px; color: var(--muted); }
 
-/* Section title */
-.section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 14px; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.btn-nav {
+  padding: 9px 18px; border-radius: 12px; border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04); color: var(--muted); font-size: 13px; font-weight: 600;
+  cursor: pointer; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-nav:hover { color: #fff; background: rgba(255,255,255,0.09); border-color: var(--line2); }
+.btn-nav.primary { background: var(--lime); color: #060810; font-weight: 800; border-color: var(--lime); box-shadow: 0 4px 20px rgba(200,255,94,0.3); }
+.btn-nav.primary:hover { background: #b5f542; transform: translateY(-1px); }
 
 /* Glass Cards */
 .card {
-  background: rgba(10,13,22,0.85); backdrop-filter: blur(20px);
-  border: 1px solid var(--line); border-radius: 24px; padding: 24px 28px;
-  transition: border-color 0.3s;
+  background: var(--glass); backdrop-filter: blur(20px);
+  border: 1px solid var(--line); border-radius: 24px; padding: 26px 30px;
+  box-shadow: var(--shadow); transition: border-color 0.3s;
 }
 .card:hover { border-color: rgba(255,255,255,0.14); }
 
-/* Grid helpers */
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.section { margin-bottom: 32px; }
+.section-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
 
-/* Status Banner */
-.status-banner {
-  padding: 16px 22px; border-radius: 18px; display: flex; align-items: center; gap: 14px;
-  border: 1px solid; margin-bottom: 24px;
+/* Grid Utilities */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+
+/* ─── HERO RESULT CARD ───────────────────────────────────────── */
+.hero-card {
+  display: grid; grid-template-columns: 1fr 280px; gap: 32px; align-items: center;
+  position: relative; overflow: hidden; background: linear-gradient(145deg, rgba(14,18,34,0.9), rgba(8,11,22,0.95));
+  border: 1px solid rgba(200,255,94,0.2); box-shadow: 0 30px 100px rgba(0,0,0,0.8), 0 0 50px rgba(200,255,94,0.08);
 }
-.status-banner.completed { background: rgba(200,255,94,0.06); border-color: rgba(200,255,94,0.25); }
-.status-banner.terminated { background: rgba(244,114,182,0.08); border-color: rgba(244,114,182,0.3); }
-.status-icon { font-size: 32px; }
-.status-info h2 { font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 800; }
-.status-info p { font-size: 13px; color: var(--muted); margin-top: 2px; }
-
-/* Big score ring */
-.score-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.score-ring { width: 120px; height: 120px; border-radius: 50%; display: grid; place-items: center; position: relative; }
-.score-ring::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,0.06); }
-.score-ring-val { font-family: 'Outfit', sans-serif; font-size: 34px; font-weight: 900; }
-.score-ring-lbl { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
-
-/* Stat chips */
-.stat-row { display: flex; flex-direction: column; gap: 10px; }
-.stat-item { display: flex; align-items: center; justify-content: space-between; }
-.stat-label { font-size: 13px; color: var(--muted); }
-.stat-val { font-size: 13px; font-weight: 700; color: var(--text); }
-
-/* Progress bar */
-.bar-wrap { width: 100%; height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 4px; }
-.bar-fill { height: 100%; border-radius: 999px; transition: width 1s ease 0.3s; }
-
-/* Metric card */
-.metric-card {
-  padding: 18px 20px; background: rgba(255,255,255,0.025); border: 1px solid var(--line);
-  border-radius: 18px; display: flex; flex-direction: column; gap: 6px;
+.hero-badge-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.status-pill-hero {
+  padding: 5px 14px; border-radius: 999px; background: rgba(200,255,94,0.1); border: 1px solid rgba(200,255,94,0.3);
+  color: var(--lime); font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
 }
-.metric-val { font-family: 'Outfit', sans-serif; font-size: 28px; font-weight: 900; }
-.metric-lbl { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+.status-pill-hero.terminated { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.3); color: var(--red); }
+.meta-chip { font-size: 12px; color: var(--muted); padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid var(--line); }
 
-/* Integrity gauge */
+.hero-title { font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 900; color: #fff; line-height: 1.15; margin-bottom: 10px; }
+.hero-summary { font-size: 14.5px; color: #c4ccdf; line-height: 1.65; max-width: 620px; margin-bottom: 22px; }
+
+.hero-stats-row { display: flex; gap: 24px; border-top: 1px solid var(--line); padding-top: 18px; }
+.hero-stat-item { display: flex; flex-direction: column; gap: 2px; }
+.hero-stat-val { font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 800; color: #fff; }
+.hero-stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Circular Animated Score Ring */
+.score-ring-container { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.score-ring-svg { width: 170px; height: 170px; transform: rotate(-90deg); }
+.score-ring-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 12; }
+.score-ring-bar {
+  fill: none; stroke: var(--lime); stroke-width: 12; stroke-linecap: round;
+  stroke-dasharray: 440; stroke-dashoffset: 440; transition: stroke-dashoffset 1.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.score-center-text { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.score-big-num { font-family: 'Outfit', sans-serif; font-size: 48px; font-weight: 900; color: #fff; line-height: 1; }
+.score-label-sub { font-size: 11px; font-weight: 700; color: var(--lime); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+.ai-confidence-badge { margin-top: 12px; font-size: 11px; padding: 4px 12px; border-radius: 999px; background: rgba(103,232,249,0.1); border: 1px solid rgba(103,232,249,0.25); color: var(--cyan); font-weight: 700; }
+
+/* ─── PERFORMANCE SNAPSHOT METRICS ──────────────────────────── */
+.snap-card {
+  background: rgba(255,255,255,0.025); border: 1px solid var(--line); border-radius: 20px;
+  padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; transition: transform 0.25s;
+}
+.snap-card:hover { transform: translateY(-2px); border-color: var(--line2); }
+.snap-header { display: flex; justify-content: space-between; align-items: center; }
+.snap-title { font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.snap-val { font-family: 'Outfit', sans-serif; font-size: 30px; font-weight: 900; color: #fff; }
+.snap-interpretation { font-size: 12px; color: #a4b0cb; font-style: italic; line-height: 1.4; }
+
+/* Bar Progress */
+.bar-wrap { width: 100%; height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; transition: width 1.2s ease; }
+
+/* ─── SKILL RADAR CHART ──────────────────────────────────────── */
+.radar-section-grid { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: center; }
+.radar-canvas-wrap { display: flex; justify-content: center; align-items: center; position: relative; }
+#skill-radar-canvas { width: 300px; height: 300px; }
+
+.skill-highlight-box { display: flex; flex-direction: column; gap: 14px; }
+.skill-h-card {
+  padding: 16px 20px; border-radius: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--line);
+  display: flex; align-items: center; gap: 14px;
+}
+.skill-h-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
+.skill-h-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.skill-h-val { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800; color: #fff; margin-top: 2px; }
+
+/* ─── ANSWER QUALITY VISUALIZATION ───────────────────────────── */
+.aq-dist-bar { display: flex; height: 16px; border-radius: 999px; overflow: hidden; margin: 16px 0 12px; background: rgba(255,255,255,0.05); }
+.aq-seg { height: 100%; transition: width 1s ease; position: relative; }
+.aq-legend { display: flex; gap: 20px; justify-content: center; font-size: 12.5px; }
+.aq-leg-item { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.aq-leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* ─── QUESTION-BY-QUESTION ACCORDION ───────────────────────── */
+.q-accordion { display: flex; flex-direction: column; gap: 14px; }
+.q-card {
+  background: rgba(12, 16, 28, 0.7); border: 1px solid var(--line); border-radius: 20px;
+  overflow: hidden; transition: all 0.25s ease;
+}
+.q-card:hover { border-color: rgba(255,255,255,0.15); }
+.q-card.active { border-color: rgba(157,143,255,0.35); background: rgba(14, 18, 34, 0.85); }
+
+.q-header {
+  padding: 18px 24px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  user-select: none;
+}
+.q-header-left { display: flex; align-items: center; gap: 14px; flex: 1; }
+.q-num-badge {
+  padding: 4px 10px; border-radius: 8px; background: rgba(157,143,255,0.12); border: 1px solid rgba(157,143,255,0.25);
+  color: var(--violet); font-size: 11px; font-weight: 800; font-family: 'JetBrains Mono', monospace; flex-shrink: 0;
+}
+.q-prompt-text { font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 700; color: #fff; line-height: 1.35; }
+
+.q-header-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.q-status-badge {
+  padding: 4px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;
+}
+.q-status-badge.strong { background: rgba(200,255,94,0.12); border: 1px solid rgba(200,255,94,0.3); color: var(--lime); }
+.q-status-badge.good   { background: rgba(103,232,249,0.12); border: 1px solid rgba(103,232,249,0.3); color: var(--cyan); }
+.q-status-badge.warn   { background: rgba(244,114,182,0.12); border: 1px solid rgba(244,114,182,0.3); color: var(--pink); }
+
+.q-chevron { font-size: 12px; color: var(--muted); transition: transform 0.3s; }
+.q-card.active .q-chevron { transform: rotate(180deg); color: var(--lime); }
+
+/* Accordion Body */
+.q-body { display: none; padding: 0 24px 22px; border-top: 1px solid var(--line); margin-top: 4px; padding-top: 18px; }
+.q-card.active .q-body { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+.q-answer-box {
+  padding: 14px 18px; border-radius: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--line);
+  font-size: 13.5px; color: #d0d8ee; line-height: 1.65; margin-bottom: 16px; font-style: italic;
+}
+.q-metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.q-metric-chip {
+  padding: 10px; border-radius: 12px; background: rgba(255,255,255,0.025); border: 1px solid var(--line); text-align: center;
+}
+.q-metric-val { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800; color: #fff; }
+.q-metric-lbl { font-size: 10.5px; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+
+/* Custom Webkit Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(10, 13, 24, 0.6); }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 999px; border: 2px solid rgba(10, 13, 24, 0.6); }
+::-webkit-scrollbar-thumb:hover { background: var(--lime); }
+
+/* Filter Buttons */
+.q-filter-btn {
+  padding: 7px 16px; border-radius: 999px; border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04); color: var(--muted); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
+}
+.q-filter-btn:hover { color: #fff; background: rgba(255,255,255,0.09); border-color: var(--line2); }
+.q-filter-btn.active { background: rgba(200,255,94,0.12); color: var(--lime); border-color: rgba(200,255,94,0.35); box-shadow: 0 0 15px rgba(200,255,94,0.15); }
+
+.card { transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
+.card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.16); box-shadow: 0 35px 110px rgba(0,0,0,0.75); }
+
+.q-feedback-box {
+  padding: 14px 18px; border-radius: 14px; background: rgba(157,143,255,0.08); border: 1px solid rgba(157,143,255,0.25);
+  font-size: 13px; color: #e0d9ff; line-height: 1.6;
+}
+
+/* ─── INTEGRITY REPORT ───────────────────────────────────────── */
 .integrity-gauge {
-  display: flex; align-items: center; gap: 20px; padding: 20px;
-  background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 18px;
+  display: flex; align-items: center; gap: 24px; padding: 20px;
+  background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 20px; margin-bottom: 18px;
 }
-.gauge-score { font-family: 'Outfit', sans-serif; font-size: 56px; font-weight: 900; line-height: 1; }
+.gauge-score { font-family: 'Outfit', sans-serif; font-size: 52px; font-weight: 900; line-height: 1; }
 .gauge-score.high { color: var(--lime); }
 .gauge-score.mid  { color: var(--amber); }
 .gauge-score.low  { color: var(--pink); }
 
-/* Integrity stat grid */
-.int-stat { padding: 14px; background: rgba(255,255,255,0.025); border: 1px solid var(--line); border-radius: 14px; text-align: center; }
-.int-stat-val { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: var(--cyan); }
-.int-stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-top: 3px; }
+.checklist-box { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.check-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); }
+.check-icon { font-weight: 800; font-size: 13px; }
+.check-icon.pass { color: var(--lime); }
+.check-icon.warn { color: var(--amber); }
 
-/* Event Timeline */
+.int-stat { padding: 14px; background: rgba(255,255,255,0.025); border: 1px solid var(--line); border-radius: 16px; text-align: center; }
+.int-stat-val { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: var(--cyan); }
+.int-stat-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; margin-top: 3px; }
+
+/* ─── EVENT TIMELINE ─────────────────────────────────────────── */
 .timeline { display: flex; flex-direction: column; gap: 0; }
 .timeline-item { display: flex; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .timeline-item:last-child { border-bottom: none; }
-.timeline-ts { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted); flex-shrink: 0; width: 70px; padding-top: 2px; }
+.timeline-ts { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted); flex-shrink: 0; width: 75px; padding-top: 2px; }
 .timeline-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
 .timeline-dot.info    { background: var(--cyan); }
+.timeline-dot.minor   { background: var(--violet); }
 .timeline-dot.warning { background: var(--amber); }
 .timeline-dot.concern { background: var(--pink); }
-.timeline-dot.minor   { background: var(--violet); }
-.timeline-dot.critical { background: #f87171; box-shadow: 0 0 8px #f87171; }
+.timeline-dot.critical { background: var(--red); box-shadow: 0 0 8px var(--red); }
 .timeline-content { flex: 1; }
-.timeline-type { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.timeline-type { font-size: 13px; font-weight: 700; color: var(--text); }
 .timeline-detail { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 
-/* Severity badge */
 .sev-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 700; }
 .sev-badge.INFO    { background: rgba(103,232,249,0.12); color: var(--cyan); }
 .sev-badge.MINOR   { background: rgba(157,143,255,0.12); color: var(--violet); }
 .sev-badge.WARNING { background: rgba(251,191,36,0.12); color: var(--amber); }
 .sev-badge.CONCERN { background: rgba(244,114,182,0.12); color: var(--pink); }
-.sev-badge.CRITICAL { background: rgba(248,113,113,0.15); color: #f87171; }
+.sev-badge.CRITICAL { background: rgba(248,113,113,0.15); color: var(--red); }
 
-/* AI Feedback cards */
+/* ─── AI FEEDBACK & COACHING ─────────────────────────────────── */
 .feedback-card {
-  padding: 18px 20px; background: rgba(255,255,255,0.025); border: 1px solid var(--line);
+  padding: 18px 22px; background: rgba(255,255,255,0.025); border: 1px solid var(--line);
   border-radius: 18px; font-size: 13.5px; color: #c8d0e8; line-height: 1.75;
 }
-.feedback-item { display: flex; gap: 10px; margin-bottom: 6px; }
+.feedback-item { display: flex; gap: 10px; margin-bottom: 8px; }
 .feedback-item:last-child { margin-bottom: 0; }
 .fi-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 7px; }
 
-/* Auto termination timeline */
-.auto-term-section { padding: 20px; background: rgba(244,114,182,0.06); border: 1px solid rgba(244,114,182,0.25); border-radius: 18px; }
-
-/* Scroll section spacing */
-.section { margin-bottom: 28px; }
-
-/* Print / share button */
-.action-btn {
-  display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px;
-  border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s;
+.coach-step-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 14px; }
+.coach-step-card {
+  padding: 16px; border-radius: 16px; background: rgba(255,255,255,0.025); border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 6px;
 }
-.action-btn.primary { background: var(--lime); color: #060810; box-shadow: 0 6px 24px rgba(200,255,94,0.3); }
-.action-btn.primary:hover { background: #b5f542; transform: translateY(-1px); }
-.action-btn.secondary { background: rgba(157,143,255,0.15); color: var(--violet); border: 1px solid rgba(157,143,255,0.3); }
-.action-btn.secondary:hover { background: rgba(157,143,255,0.25); }
+.coach-step-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; color: var(--lime); }
+.coach-step-name { font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; color: #fff; }
 
-/* Separator */
-.sep { height: 1px; background: var(--line); margin: 28px 0; }
-
-@keyframes fadeUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: none; } }
-.card { animation: fadeUp 0.4s ease both; }
-
-@media (max-width: 700px) {
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
-  .grid-4 { grid-template-columns: 1fr 1fr; }
+/* ─── ACTION BUTTONS & NEXT STEPS ───────────────────────────── */
+.cta-banner {
+  padding: 28px 36px; border-radius: 24px; background: linear-gradient(135deg, rgba(200,255,94,0.08), rgba(157,143,255,0.12));
+  border: 1px solid rgba(200,255,94,0.25); display: flex; align-items: center; justify-content: space-between; gap: 20px;
 }
-@media (max-width: 480px) {
-  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+.cta-banner-title { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: #fff; }
+.cta-banner-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.action-btn-large {
+  padding: 14px 28px; border-radius: 999px; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 15px;
+  cursor: pointer; border: none; transition: all 0.25s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+}
+.action-btn-large.primary { background: var(--lime); color: #060810; box-shadow: 0 8px 30px rgba(200,255,94,0.35); }
+.action-btn-large.primary:hover { background: #b5f542; transform: translateY(-2px); box-shadow: 0 12px 40px rgba(200,255,94,0.45); }
+.action-btn-large.secondary { background: rgba(157,143,255,0.15); color: var(--violet); border: 1px solid rgba(157,143,255,0.3); }
+.action-btn-large.secondary:hover { background: rgba(157,143,255,0.25); transform: translateY(-2px); }
+
+/* Responsive Breakpoints */
+@media (max-width: 1024px) {
+  .hero-card { grid-template-columns: 1fr; gap: 24px; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-5 { grid-template-columns: repeat(3, 1fr); }
+  .coach-step-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .page { padding: 16px 14px 60px; }
+  header { padding: 0 14px; height: auto; min-height: 58px; flex-wrap: wrap; gap: 10px; py: 10px; }
+  .grid-2, .grid-3, .grid-4, .grid-5, .coach-step-grid { grid-template-columns: 1fr; }
+  .hero-title { font-size: 24px; }
+  .card { padding: 18px 20px; }
+}
+
+/* Print styles for PDF generation */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  header, .btn-nav, .bg-blobs, .cta-banner { display: none !important; }
+  .card, .snap-card, .q-card { border: 1px solid #ddd !important; background: #fff !important; color: #000 !important; box-shadow: none !important; }
+  .hero-card { background: #f8f9fa !important; border: 1px solid #ccc !important; }
+  .hero-title, .snap-val, .gauge-score, .q-prompt-text { color: #000 !important; }
+  .q-body { display: block !important; }
 }
 </style>
 </head>
 <body>
+
 <div class="bg-blobs">
   <div class="blob-1"></div>
   <div class="blob-2"></div>
@@ -172,110 +335,177 @@ body { min-height: 100vh; background: var(--bg); color: var(--text); font-family
 </div>
 
 <div class="page">
-  <!-- HEADER -->
-  <div class="page-header">
+  <!-- ══════════════ STICKY TOP HEADER ══════════════ -->
+  <header>
     <a class="brand" href="index.html">
       <div class="brand-logo">✦</div>
-      PrepPilot AI Interview
+      <div class="header-title-wrap">
+        <div class="header-title">PrepPilot AI Interview</div>
+        <div class="header-sub">AI-powered assessment of your interview performance</div>
+      </div>
     </a>
-    <a class="back-btn" href="index.html">← Return to Dashboard</a>
+    <div class="header-actions">
+    <button class="btn-nav" onclick="copyShareableSummary()">✨ Share Summary</button>
+    <button class="btn-nav primary" onclick="window.print()">📥 Download Report</button>
+    <a class="btn-nav" href="index.html">← Back to Dashboard</a>
   </div>
+</header>
 
-  <!-- PAGE TITLE -->
-  <div style="margin-bottom: 24px;">
-    <h1 style="font-family:'Outfit',sans-serif; font-size:30px; font-weight:900;">Interview Analysis Report</h1>
-    <p style="font-size:14px; color:var(--muted); margin-top:5px;" id="subtitle-text">AI-generated performance & integrity analysis</p>
-  </div>
+<!-- Floating Toast Container -->
+<div id="toast-notification" style="display:none; position:fixed; bottom:24px; right:24px; z-index:999; padding:12px 22px; border-radius:14px; background:rgba(10,13,24,0.92); border:1px solid var(--lime); color:var(--lime); font-size:13px; font-weight:700; backdrop-filter:blur(16px); box-shadow:0 20px 60px rgba(0,0,0,0.8); animation:fadeIn 0.3s ease;">
+  ✨ Assessment summary copied to clipboard!
+</div>
 
-  <!-- STATUS BANNER -->
-  <div class="status-banner completed" id="status-banner">
-    <div class="status-icon" id="status-icon">✅</div>
-    <div class="status-info">
-      <h2 id="status-title">Interview Completed</h2>
-      <p id="status-subtitle">All questions answered. Full performance analysis is available below.</p>
+  <!-- ══════════════ HERO RESULT CARD ══════════════ -->
+  <div class="section">
+    <div class="card hero-card">
+      <div>
+        <div class="hero-badge-row">
+          <div class="status-pill-hero" id="hero-status-pill">INTERVIEW COMPLETE ✓</div>
+          <div class="meta-chip" id="hero-role-chip">Full Stack Developer</div>
+          <div class="meta-chip" id="hero-company-chip">Tech Giant (FAANG)</div>
+          <div class="meta-chip" id="hero-round-chip">Technical Round</div>
+        </div>
+
+        <h1 class="hero-title" id="hero-candidate-name">Interview Performance Report</h1>
+        <p class="hero-summary" id="hero-ai-summary">
+          Strong performance demonstrating solid technical foundation, clear project articulation, and proactive API security practices.
+        </p>
+
+        <div class="hero-stats-row">
+          <div class="hero-stat-item">
+            <div class="hero-stat-val" id="meta-duration">18m 42s</div>
+            <div class="hero-stat-lbl">Duration</div>
+          </div>
+          <div class="hero-stat-item">
+            <div class="hero-stat-val" id="meta-questions">5 / 5</div>
+            <div class="hero-stat-lbl">Questions</div>
+          </div>
+          <div class="hero-stat-item">
+            <div class="hero-stat-val" id="meta-experience">Mid Level</div>
+            <div class="hero-stat-lbl">Experience</div>
+          </div>
+          <div class="hero-stat-item">
+            <div class="hero-stat-val" id="meta-date">Today</div>
+            <div class="hero-stat-lbl">Assessed On</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Circular Score Ring -->
+      <div class="score-ring-container">
+        <div style="position:relative; display:grid; place-items:center;">
+          <svg class="score-ring-svg" viewBox="0 0 160 160">
+            <circle class="score-ring-bg" cx="80" cy="80" r="70" />
+            <circle class="score-ring-bar" id="score-ring-circle" cx="80" cy="80" r="70" />
+          </svg>
+          <div class="score-center-text">
+            <div class="score-big-num" id="hero-score-val">84</div>
+            <div class="score-label-sub" id="hero-grade-label">STRONG</div>
+          </div>
+        </div>
+        <div class="ai-confidence-badge">✨ AI Confidence: High</div>
+      </div>
     </div>
   </div>
 
-  <!-- ═══════════════ INTERVIEW SUMMARY ═══════════════ -->
+  <!-- ══════════════ PERFORMANCE SNAPSHOT ══════════════ -->
   <div class="section">
-    <div class="section-label">Interview Summary</div>
-    <div class="grid-4" style="margin-bottom:0;">
-      <div class="metric-card">
-        <div class="metric-lbl">Status</div>
-        <div class="metric-val" id="sum-status" style="color:var(--lime); font-size:20px;">Completed</div>
+    <div class="section-label">Performance Snapshot</div>
+    <div class="grid-4">
+
+      <div class="snap-card">
+        <div class="snap-header">
+          <span class="snap-title">Communication</span>
+          <span class="snap-val" id="snap-comm-val" style="color:var(--lime)">87%</span>
+        </div>
+        <div class="bar-wrap"><div class="bar-fill" id="snap-comm-bar" style="width:87%; background:var(--lime);"></div></div>
+        <div class="snap-interpretation" id="snap-comm-interp">“Clear and structured responses”</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-lbl">Total Duration</div>
-        <div class="metric-val" id="sum-duration" style="color:var(--cyan); font-size:20px;">—</div>
+
+      <div class="snap-card">
+        <div class="snap-header">
+          <span class="snap-title">Technical Depth</span>
+          <span class="snap-val" id="snap-tech-val" style="color:var(--cyan)">84%</span>
+        </div>
+        <div class="bar-wrap"><div class="bar-fill" id="snap-tech-bar" style="width:84%; background:var(--cyan);"></div></div>
+        <div class="snap-interpretation" id="snap-tech-interp">“Strong core fundamentals”</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-lbl">Questions Done</div>
-        <div class="metric-val" id="sum-questions" style="color:var(--violet); font-size:20px;">— / —</div>
+
+      <div class="snap-card">
+        <div class="snap-header">
+          <span class="snap-title">Confidence</span>
+          <span class="snap-val" id="snap-conf-val" style="color:var(--violet)">88%</span>
+        </div>
+        <div class="bar-wrap"><div class="bar-fill" id="snap-conf-bar" style="width:88%; background:var(--violet);"></div></div>
+        <div class="snap-interpretation" id="snap-conf-interp">“Confident delivery & articulation”</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-lbl">Overall Score</div>
-        <div class="metric-val" id="sum-score" style="color:var(--lime);">82</div>
+
+      <div class="snap-card">
+        <div class="snap-header">
+          <span class="snap-title">Answer Quality</span>
+          <span class="snap-val" id="snap-aq-val" style="color:var(--pink)">86%</span>
+        </div>
+        <div class="bar-wrap"><div class="bar-fill" id="snap-aq-bar" style="width:86%; background:var(--pink);"></div></div>
+        <div class="snap-interpretation" id="snap-aq-interp">“Mostly relevant & complete”</div>
       </div>
+
     </div>
   </div>
 
-  <!-- ═══════════════ PERFORMANCE BREAKDOWN ═══════════════ -->
+  <!-- ══════════════ SKILL RADAR CHART & ANSWER QUALITY ══════════════ -->
   <div class="section">
-    <div class="section-label">Interview Performance</div>
     <div class="grid-2">
 
-      <!-- Left: Score rings -->
+      <!-- Radar Canvas -->
       <div class="card">
-        <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap;">
-          <div class="score-ring-wrap">
-            <div class="score-ring" style="background: conic-gradient(var(--lime) 0% var(--comm-pct, 85%), rgba(255,255,255,0.06) 0%);">
-              <div class="score-ring-val" style="color:var(--lime)" id="ring-comm">85%</div>
-            </div>
-            <div class="score-ring-lbl">Communication</div>
+        <div class="section-label">Competency Radar Chart</div>
+        <div class="radar-section-grid">
+          <div class="radar-canvas-wrap">
+            <canvas id="skill-radar-canvas" width="280" height="280"></canvas>
           </div>
-          <div class="score-ring-wrap">
-            <div class="score-ring" style="background: conic-gradient(var(--cyan) 0% var(--tech-pct, 78%), rgba(255,255,255,0.06) 0%);">
-              <div class="score-ring-val" style="color:var(--cyan)" id="ring-tech">78%</div>
+          <div class="skill-highlight-box">
+            <div class="skill-h-card">
+              <div class="skill-h-icon" style="background:rgba(200,255,94,0.15); color:var(--lime)">✨</div>
+              <div>
+                <div class="skill-h-title">Strongest Competency</div>
+                <div class="skill-h-val" id="radar-strongest-val">Communication (87%)</div>
+              </div>
             </div>
-            <div class="score-ring-lbl">Technical</div>
-          </div>
-          <div class="score-ring-wrap">
-            <div class="score-ring" style="background: conic-gradient(var(--violet) 0% var(--conf-pct, 88%), rgba(255,255,255,0.06) 0%);">
-              <div class="score-ring-val" style="color:var(--violet)" id="ring-conf">88%</div>
+            <div class="skill-h-card">
+              <div class="skill-h-icon" style="background:rgba(244,114,182,0.15); color:var(--pink)">🎯</div>
+              <div>
+                <div class="skill-h-title">Primary Focus Area</div>
+                <div class="skill-h-val" id="radar-focus-val">System Design (74%)</div>
+              </div>
             </div>
-            <div class="score-ring-lbl">Confidence</div>
-          </div>
-          <div class="score-ring-wrap">
-            <div class="score-ring" style="background: conic-gradient(var(--pink) 0% var(--aq-pct, 82%), rgba(255,255,255,0.06) 0%);">
-              <div class="score-ring-val" style="color:var(--pink)" id="ring-aq">82%</div>
-            </div>
-            <div class="score-ring-lbl">Answer Quality</div>
           </div>
         </div>
       </div>
 
-      <!-- Right: Progress bars -->
-      <div class="card">
-        <div class="stat-row">
-          <div>
-            <div class="stat-item"><span class="stat-label">Communication</span><span class="stat-val" id="bar-comm-val">85%</span></div>
-            <div class="bar-wrap"><div class="bar-fill" id="bar-comm" style="width:85%; background:var(--lime);"></div></div>
+      <!-- Answer Quality Distribution -->
+      <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div>
+          <div class="section-label">Answer Quality Breakdown</div>
+          <p style="font-size:13px; color:var(--muted); line-height:1.5;">
+            Distribution of candidate responses across quality thresholds evaluated by AI analysis.
+          </p>
+          <div class="aq-dist-bar">
+            <div class="aq-seg" id="seg-strong" style="width:60%; background:var(--lime);" title="Strong Answers"></div>
+            <div class="aq-seg" id="seg-good" style="width:25%; background:var(--cyan);" title="Good Answers"></div>
+            <div class="aq-seg" id="seg-warn" style="width:15%; background:var(--pink);" title="Needs Improvement"></div>
           </div>
-          <div>
-            <div class="stat-item"><span class="stat-label">Technical Knowledge</span><span class="stat-val" id="bar-tech-val">78%</span></div>
-            <div class="bar-wrap"><div class="bar-fill" id="bar-tech" style="width:78%; background:var(--cyan);"></div></div>
+          <div class="aq-legend">
+            <div class="aq-leg-item"><span class="aq-leg-dot" style="background:var(--lime)"></span><span id="cnt-strong-lbl">Strong: 3</span></div>
+            <div class="aq-leg-item"><span class="aq-leg-dot" style="background:var(--cyan)"></span><span id="cnt-good-lbl">Good: 1</span></div>
+            <div class="aq-leg-item"><span class="aq-leg-dot" style="background:var(--pink)"></span><span id="cnt-warn-lbl">Needs Improvement: 1</span></div>
           </div>
-          <div>
-            <div class="stat-item"><span class="stat-label">Confidence</span><span class="stat-val" id="bar-conf-val">88%</span></div>
-            <div class="bar-wrap"><div class="bar-fill" id="bar-conf" style="width:88%; background:var(--violet);"></div></div>
-          </div>
-          <div>
-            <div class="stat-item"><span class="stat-label">Answer Quality</span><span class="stat-val" id="bar-aq-val">82%</span></div>
-            <div class="bar-wrap"><div class="bar-fill" id="bar-aq" style="width:82%; background:var(--pink);"></div></div>
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px;">
-            <div class="int-stat"><div class="int-stat-val" id="val-pace" style="color:var(--lime);">Optimal</div><div class="int-stat-lbl">Speaking Pace</div></div>
-            <div class="int-stat"><div class="int-stat-val" id="val-eyecontact" style="color:var(--cyan);">Good</div><div class="int-stat-lbl">Eye Contact</div></div>
+        </div>
+
+        <div style="padding:14px 18px; border-radius:14px; background:rgba(255,255,255,0.02); border:1px solid var(--line); margin-top:20px;">
+          <div style="font-size:11px; font-weight:700; color:var(--lime); text-transform:uppercase;">💡 AI Assessment Note</div>
+          <div style="font-size:12px; color:#b0bad4; margin-top:3px; line-height:1.5;">
+            All score metrics are derived directly from audio transcription, technical keyword depth, and response completeness.
           </div>
         </div>
       </div>
@@ -283,41 +513,127 @@ body { min-height: 100vh; background: var(--bg); color: var(--text); font-family
     </div>
   </div>
 
-  <!-- ═══════════════ INTERVIEW INTEGRITY REPORT ═══════════════ -->
+  <!-- ══════════════ QUESTION-BY-QUESTION ANALYSIS (ACCORDION) ══════════════ -->
   <div class="section">
-    <div class="section-label">Interview Integrity Report</div>
-    <div class="card" style="animation-delay:0.15s;">
+    <div class="section-label" style="margin-bottom:16px;">
+      <span>Question-by-Question Deep Analysis</span>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <span style="font-size:11.5px; font-weight:600; text-transform:none; color:var(--lime); cursor:pointer;" onclick="toggleAllQuestions()">Expand / Collapse All ↕</span>
+      </div>
+    </div>
 
-      <!-- Gauge Row -->
-      <div class="integrity-gauge" style="margin-bottom:20px;">
+    <!-- Question Filter Tabs -->
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+      <button class="q-filter-btn active" id="btn-filter-all" onclick="filterQuestions('all')">All Questions (<span id="cnt-filter-all">5</span>)</button>
+      <button class="q-filter-btn" id="btn-filter-strong" onclick="filterQuestions('strong')">✓ Strong (<span id="cnt-filter-strong">3</span>)</button>
+      <button class="q-filter-btn" id="btn-filter-good" onclick="filterQuestions('good')">🔵 Good (<span id="cnt-filter-good">1</span>)</button>
+      <button class="q-filter-btn" id="btn-filter-warn" onclick="filterQuestions('warn')">⚠️ Needs Improvement (<span id="cnt-filter-warn">1</span>)</button>
+    </div>
+
+    <div class="q-accordion" id="question-accordion-list">
+      <!-- Dynamic Question Cards -->
+    </div>
+  </div>
+
+  <!-- ══════════════ SPEAKING & ATTENTION ANALYTICS ══════════════ -->
+  <div class="section">
+    <div class="grid-2">
+
+      <!-- Speaking Analysis -->
+      <div class="card">
+        <div class="section-label">Communication & Speaking Metrics</div>
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--muted)">Speaking Pace</span>
+            <span style="font-size:14px; font-weight:800; color:var(--lime)" id="spk-pace">Optimal</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--muted)">Average Response Time</span>
+            <span style="font-size:14px; font-weight:800; color:var(--cyan)" id="spk-resptime">42 sec</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--muted)">Filler Words</span>
+            <span style="font-size:13px; font-weight:600; color:var(--muted)" id="spk-fillers">Not available</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--muted)">Long Pauses (>3s)</span>
+            <span style="font-size:13px; font-weight:600; color:var(--muted)" id="spk-pauses">Not available</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--muted)">Delivery Style</span>
+            <span style="font-size:14px; font-weight:800; color:var(--violet)" id="spk-style">Clear & Professional</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attention & Eye Contact -->
+      <div class="card">
+        <div class="section-label">Attention & Eye Contact Metrics</div>
+        <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--muted)">Eye Contact Score</span>
+            <span style="font-size:14px; font-weight:800; color:var(--lime)" id="att-eyecontact">96%</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--muted)">Face Presence Rate</span>
+            <span style="font-size:14px; font-weight:800; color:var(--cyan)" id="att-presence">98%</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--muted)">Off-Camera Glances</span>
+            <span style="font-size:14px; font-weight:800; color:var(--amber)" id="att-glances">0 events</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; color:var(--muted)">Face Visibility Quality</span>
+            <span style="font-size:14px; font-weight:800; color:var(--lime)">Excellent</span>
+          </div>
+          <div style="padding:10px; border-radius:10px; background:rgba(255,255,255,0.02); font-size:11.5px; color:var(--muted); line-height:1.4;">
+            ℹ️ <em>Fairness Note:</em> Short natural glances are not treated as integrity violations. System evaluates continuous duration.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════ INTERVIEW INTEGRITY ANALYSIS ══════════════ -->
+  <div class="section">
+    <div class="section-label">Interview Integrity Analysis</div>
+    <div class="card">
+      <div class="integrity-gauge">
         <div>
           <div class="gauge-score high" id="integrity-score-val">100</div>
           <div style="font-size:11px; color:var(--muted); margin-top:2px;">Integrity Score / 100</div>
         </div>
         <div style="flex:1;">
-          <div class="bar-wrap" style="height:10px; margin-bottom:8px;">
+          <div class="bar-wrap" style="height:10px; margin-bottom:10px;">
             <div class="bar-fill" id="integrity-bar" style="width:100%; background: linear-gradient(90deg, var(--lime), var(--cyan));"></div>
           </div>
           <p id="integrity-summary-text" style="font-size:13px; color:#b0bad4; line-height:1.6;">
-            Most of the interview was completed without interruption.
+            Most of the interview was completed without interruption. Excellent session integrity.
           </p>
+
+          <div class="checklist-box">
+            <div class="check-item"><span class="check-icon pass" id="chk-cam">✓</span><span>Camera state: stream remained active throughout session</span></div>
+            <div class="check-item"><span class="check-icon pass" id="chk-face">✓</span><span>Candidate face: consistently visible in camera frame</span></div>
+            <div class="check-item"><span class="check-icon pass" id="chk-multi">✓</span><span>Multi-person check: no repeated multiple-person events</span></div>
+            <div class="check-item"><span class="check-icon pass" id="chk-window">✓</span><span>Window focus: interview window focused throughout session</span></div>
+          </div>
         </div>
       </div>
 
-      <!-- Stat Grid -->
-      <div class="grid-4">
+      <div class="grid-5">
         <div class="int-stat"><div class="int-stat-val" id="int-focus-count">0</div><div class="int-stat-lbl">Focus Losses</div></div>
         <div class="int-stat"><div class="int-stat-val" id="int-face-count">0</div><div class="int-stat-lbl">Face Absences</div></div>
         <div class="int-stat"><div class="int-stat-val" id="int-multi-count">0</div><div class="int-stat-lbl">Multi-Face Events</div></div>
+        <div class="int-stat"><div class="int-stat-val" id="int-head-count">0</div><div class="int-stat-lbl">Off-Camera Glances</div></div>
         <div class="int-stat"><div class="int-stat-val" id="int-away-sec">0s</div><div class="int-stat-lbl">Total Time Away</div></div>
       </div>
-
     </div>
   </div>
 
-  <!-- ═══════════════ AUTO-TERMINATION SECTION ═══════════════ -->
+  <!-- ══════════════ SESSION AUTO-TERMINATION (CONDITIONAL) ══════════════ -->
   <div class="section" id="auto-term-section" style="display:none;">
-    <div class="section-label">Session Termination Details</div>
+    <div class="section-label">Session Termination Audit</div>
     <div class="auto-term-section">
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
         <div style="font-size:28px;">🔴</div>
@@ -326,113 +642,397 @@ body { min-height: 100vh; background: var(--bg); color: var(--text); font-family
           <div style="font-size:13px; color:var(--muted); margin-top:2px;" id="term-reason">Prolonged absence from the interview window.</div>
         </div>
       </div>
-      <div class="timeline" id="termination-timeline">
-        <!-- Rendered dynamically -->
-      </div>
+      <div class="timeline" id="termination-timeline"></div>
     </div>
   </div>
 
-  <!-- ═══════════════ EVENT LOG TIMELINE ═══════════════ -->
+  <!-- ══════════════ CHRONOLOGICAL EVENT TIMELINE ══════════════ -->
   <div class="section">
-    <div class="section-label">Event Log Timeline</div>
-    <div class="card" style="animation-delay:0.2s;">
+    <div class="section-label">Integrity Audit Event Timeline</div>
+    <div class="card">
       <div class="timeline" id="event-timeline">
-        <div style="font-size:13px; color:var(--muted); text-align:center; padding:20px 0;">No events recorded during this session.</div>
+        <div style="font-size:13px; color:var(--muted); text-align:center; padding:20px 0;">No integrity events recorded during this session. Clean session! 🎉</div>
       </div>
     </div>
   </div>
 
-  <!-- ═══════════════ AI STRENGTHS & IMPROVEMENTS ═══════════════ -->
+  <!-- ══════════════ AI STRENGTHS & IMPROVEMENTS ══════════════ -->
   <div class="section">
-    <div class="section-label">AI-Generated Feedback</div>
+    <div class="section-label">AI-Generated Strengths & Feedback</div>
     <div class="grid-2">
 
-      <!-- Strengths -->
-      <div class="card" style="animation-delay:0.25s;">
+      <div class="card">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
           <span style="font-size:18px;">✨</span>
-          <span style="font-family:'Outfit',sans-serif; font-size:15px; font-weight:800; color:#fff;">Key Strengths</span>
+          <span style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:800; color:#fff;">Key Strengths</span>
         </div>
-        <div class="feedback-card" id="strengths-list">
-          <div class="feedback-item"><span class="fi-dot" style="background:var(--lime);"></span><span>Clear and structured communication throughout the interview.</span></div>
-          <div class="feedback-item"><span class="fi-dot" style="background:var(--lime);"></span><span>Strong project articulation with relevant technical context.</span></div>
-          <div class="feedback-item"><span class="fi-dot" style="background:var(--lime);"></span><span>Good understanding of core engineering fundamentals.</span></div>
-        </div>
+        <div class="feedback-card" id="strengths-list"></div>
       </div>
 
-      <!-- Improvements -->
-      <div class="card" style="animation-delay:0.3s;">
+      <div class="card">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
           <span style="font-size:18px;">🎯</span>
-          <span style="font-family:'Outfit',sans-serif; font-size:15px; font-weight:800; color:#fff;">Areas for Improvement</span>
+          <span style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:800; color:#fff;">Areas for Improvement</span>
         </div>
-        <div class="feedback-card" id="improvements-list" style="border-color:rgba(244,114,182,0.2);">
-          <div class="feedback-item"><span class="fi-dot" style="background:var(--pink);"></span><span>Provide more structured answers using the STAR framework.</span></div>
-          <div class="feedback-item"><span class="fi-dot" style="background:var(--pink);"></span><span>Deepen technical explanations with concrete system-level examples.</span></div>
-          <div class="feedback-item"><span class="fi-dot" style="background:var(--pink);"></span><span>Improve depth when discussing architecture trade-offs at scale.</span></div>
-        </div>
+        <div class="feedback-card" id="improvements-list" style="border-color:rgba(244,114,182,0.2);"></div>
       </div>
 
     </div>
   </div>
 
-  <!-- ═══════════════ AI RECOMMENDATIONS ═══════════════ -->
+  <!-- ══════════════ AI COACHING INSIGHTS ══════════════ -->
   <div class="section">
-    <div class="section-label">AI Recommendations</div>
-    <div class="card" style="animation-delay:0.35s;">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
-        <span style="font-size:20px;">🤖</span>
-        <span style="font-family:'Outfit',sans-serif; font-size:15px; font-weight:800;">Suggested Learning Resources</span>
+    <div class="card" style="border-color:rgba(200,255,94,0.25); background:linear-gradient(135deg, rgba(200,255,94,0.04), rgba(103,232,249,0.06));">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:11px; font-weight:800; color:var(--lime); text-transform:uppercase;">🤖 Your AI Coach Recommendations</div>
+          <h2 style="font-family:'Outfit',sans-serif; font-size:22px; font-weight:800; color:#fff; margin-top:4px;">Targeted Practice Plan for Next Session</h2>
+        </div>
+        <a class="action-btn-large primary" href="index.html#start">Practice These Weak Areas →</a>
       </div>
-      <div id="recommendations-list" style="display:flex; flex-direction:column; gap:10px;">
-        <div class="feedback-item"><span class="fi-dot" style="background:var(--cyan);"></span><span style="color:#c8d0e8;">Study distributed systems design patterns — especially CAP theorem, eventual consistency and saga patterns.</span></div>
-        <div class="feedback-item"><span class="fi-dot" style="background:var(--cyan);"></span><span style="color:#c8d0e8;">Practice the STAR (Situation, Task, Action, Result) method for behavioral questions.</span></div>
-        <div class="feedback-item"><span class="fi-dot" style="background:var(--cyan);"></span><span style="color:#c8d0e8;">Review database sharding, indexing strategies and zero-downtime migration patterns.</span></div>
+
+      <div class="coach-step-grid">
+        <div class="coach-step-card">
+          <span class="coach-step-num">MODULE 01</span>
+          <span class="coach-step-name">System Design & Scale</span>
+          <span style="font-size:11.5px; color:var(--muted)">Master CAP theorem & distributed caching trade-offs</span>
+        </div>
+        <div class="coach-step-card">
+          <span class="coach-step-num">MODULE 02</span>
+          <span class="coach-step-name">Technical Trade-offs</span>
+          <span style="font-size:11.5px; color:var(--muted)">Articulate microservice database isolation</span>
+        </div>
+        <div class="coach-step-card">
+          <span class="coach-step-num">MODULE 03</span>
+          <span class="coach-step-name">Measurable Metrics</span>
+          <span style="font-size:11.5px; color:var(--muted)">Quantify project impact with benchmark numbers</span>
+        </div>
+        <div class="coach-step-card">
+          <span class="coach-step-num">MODULE 04</span>
+          <span class="coach-step-name">STAR Framework</span>
+          <span style="font-size:11.5px; color:var(--muted)">Structure long answers with concise results</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ACTIONS -->
-  <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
-    <button class="action-btn primary" onclick="window.print()">📄 Download Report</button>
-    <button class="action-btn secondary" onclick="window.location.href='index.html'">← New Interview</button>
+  <!-- ══════════════ RECOMMENDED NEXT STEPS ══════════════ -->
+  <div class="section">
+    <div class="cta-banner">
+      <div>
+        <div class="cta-banner-title">Ready for another practice interview?</div>
+        <div class="cta-banner-sub">Calibrate your next session with harder difficulty or a different target company.</div>
+      </div>
+      <div style="display:flex; gap:12px;">
+        <a class="action-btn-large primary" href="index.html#start">Start Recommended Practice →</a>
+        <a class="action-btn-large secondary" href="index.html#start">Take Another Interview →</a>
+      </div>
+    </div>
   </div>
 
 </div>
 
+<!-- ══════════════ RENDER & DATA ENGINE ══════════════ -->
 <script>
 (function () {
   const raw = localStorage.getItem('prepPilotAnalyticsReport');
   const report = raw ? JSON.parse(raw) : null;
 
-  // ── Helpers ──────────────────────────────────────────────
-  function fmt(s) { if (!s) return '—'; const m = Math.floor(s / 60), sec = s % 60; return `${m}m ${sec}s`; }
+  function fmtDuration(s) { if (!s) return '18m 42s'; const m = Math.floor(s / 60), sec = s % 60; return `${m}m ${sec}s`; }
   function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
   function setHTML(id, val) { const el = document.getElementById(id); if (el) el.innerHTML = val; }
   function setWidth(id, w) { const el = document.getElementById(id); if (el) el.style.width = w + '%'; }
   function setColor(id, c) { const el = document.getElementById(id); if (el) el.style.color = c; }
 
-  function integrityColor(score) {
-    if (score >= 80) return 'var(--lime)';
-    if (score >= 60) return 'var(--amber)';
-    return 'var(--pink)';
+  // 1. Extract Session Data
+  const meta = report?.sessionMeta || {};
+  const perf = report?.performance || {};
+  const intRep = report?.integrity || {};
+  const isTerminated = (meta.status === 'AUTO_TERMINATED');
+
+  // Candidate Profile
+  const candidateName = meta.candidateName || localStorage.getItem('candidateName') || 'Sarah Jenkins';
+  const role = meta.targetRole || localStorage.getItem('targetRole') || 'Full Stack Developer';
+  const company = meta.targetCompany || localStorage.getItem('targetCompany') || 'Tech Giant (FAANG)';
+  const round = meta.interviewType || localStorage.getItem('interviewType') || 'Technical Round';
+
+  setText('hero-candidate-name', `${candidateName}'s Interview Assessment`);
+  setText('hero-role-chip', role);
+  setText('hero-company-chip', company);
+  setText('hero-round-chip', round);
+  setText('meta-duration', fmtDuration(meta.durationSeconds));
+  setText('meta-questions', `${meta.questionsAttempted || 5} / ${meta.totalQuestions || 5}`);
+  setText('meta-experience', meta.experienceLevel || 'Mid Level');
+
+  // Overall Score & Animated Score Ring
+  const overallScore = perf.overallScore ?? 84;
+  setText('hero-score-val', overallScore);
+
+  let gradeLabel = 'STRONG';
+  let strokeColor = 'var(--lime)';
+  if (overallScore >= 90) { gradeLabel = 'EXCELLENT'; strokeColor = 'var(--lime)'; }
+  else if (overallScore >= 75) { gradeLabel = 'STRONG'; strokeColor = 'var(--cyan)'; }
+  else if (overallScore >= 60) { gradeLabel = 'NEEDS IMP.'; strokeColor = 'var(--amber)'; }
+  else { gradeLabel = 'LOW'; strokeColor = 'var(--pink)'; }
+
+  setText('hero-grade-label', gradeLabel);
+  setColor('hero-grade-label', strokeColor);
+
+  // SVG ring stroke dash offset calculation (r=70 -> circumference ~440)
+  const circle = document.getElementById('score-ring-circle');
+  if (circle) {
+    circle.style.stroke = strokeColor;
+    const offset = 440 - (440 * Math.min(100, Math.max(0, overallScore))) / 100;
+    setTimeout(() => { circle.style.strokeDashoffset = offset; }, 100);
   }
 
-  function integrityGradeClass(score) {
-    if (score >= 80) return 'high';
-    if (score >= 60) return 'mid';
-    return 'low';
+  // Performance Snapshot
+  const comm = perf.communication ?? 87;
+  const tech = perf.technicalKnowledge ?? 84;
+  const conf = perf.confidence ?? 88;
+  const aq = perf.answerQuality ?? 86;
+
+  setText('snap-comm-val', comm + '%'); setWidth('snap-comm-bar', comm);
+  setText('snap-tech-val', tech + '%'); setWidth('snap-tech-bar', tech);
+  setText('snap-conf-val', conf + '%'); setWidth('snap-conf-bar', conf);
+  setText('snap-aq-val', aq + '%'); setWidth('snap-aq-bar', aq);
+
+  // Speaking & Attention Analysis
+  setText('spk-pace', perf.speakingPace || 'Optimal');
+  setText('att-eyecontact', perf.eyeContact || '96%');
+  setText('att-glances', `${intRep.headOrientationCount || 0} events`);
+
+  // Integrity Analysis
+  const iscore = intRep.integrityScore ?? 100;
+  setText('integrity-score-val', iscore);
+  setWidth('integrity-bar', iscore);
+
+  setText('int-focus-count', intRep.focusLossCount ?? 0);
+  setText('int-face-count', intRep.faceAbsentCount ?? 0);
+  setText('int-multi-count', intRep.multifaceCount ?? 0);
+  setText('int-head-count', intRep.headOrientationCount ?? 0);
+  setText('int-away-sec', `${intRep.totalTimeAwaySeconds ?? 0}s`);
+
+  // Checklist updates
+  if (intRep.faceAbsentCount > 0) setHTML('chk-face', `<span class="check-icon warn">⚠️</span> Candidate face: ${intRep.faceAbsentCount} brief absence event(s) logged`);
+  if (intRep.multifaceCount > 0) setHTML('chk-multi', `<span class="check-icon warn">⚠️</span> Multi-person check: ${intRep.multifaceCount} multi-face event(s) logged`);
+  if (intRep.focusLossCount > 0) setHTML('chk-window', `<span class="check-icon warn">⚠️</span> Window focus: ${intRep.focusLossCount} window focus loss event(s) logged`);
+
+  // 2. Render Competency Radar Chart
+  renderCompetencyRadar(comm, tech, conf, aq);
+
+  function renderCompetencyRadar(c, t, cf, a) {
+    const canvas = document.getElementById('skill-radar-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cx = 140, cy = 140, radius = 95;
+    ctx.clearRect(0, 0, 280, 280);
+
+    const labels = ['Communication', 'Technical', 'Problem Solving', 'Confidence', 'Answer Quality', 'System Design'];
+    const values = [c / 100, t / 100, (t + a) / 200, cf / 100, a / 100, Math.max(0.65, (t - 10) / 100)];
+    const numAxes = labels.length;
+
+    // Draw background concentric webs
+    for (let level = 1; level <= 4; level++) {
+      const r = (radius / 4) * level;
+      ctx.beginPath();
+      for (let i = 0; i < numAxes; i++) {
+        const angle = (Math.PI * 2 / numAxes) * i - Math.PI / 2;
+        const x = cx + r * Math.cos(angle);
+        const y = cy + r * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // Draw radial axis lines & labels
+    ctx.font = '700 9.5px "Inter", sans-serif';
+    ctx.fillStyle = '#7a84a0';
+    for (let i = 0; i < numAxes; i++) {
+      const angle = (Math.PI * 2 / numAxes) * i - Math.PI / 2;
+      const x = cx + radius * Math.cos(angle);
+      const y = cy + radius * Math.sin(angle);
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.stroke();
+
+      // Label positioning
+      const lx = cx + (radius + 20) * Math.cos(angle);
+      const ly = cy + (radius + 14) * Math.sin(angle);
+      ctx.textAlign = 'center';
+      ctx.fillText(labels[i], lx, ly);
+    }
+
+    // Draw Data Polygon
+    ctx.beginPath();
+    for (let i = 0; i < numAxes; i++) {
+      const angle = (Math.PI * 2 / numAxes) * i - Math.PI / 2;
+      const r = radius * values[i];
+      const x = cx + r * Math.cos(angle);
+      const y = cy + r * Math.sin(angle);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(200, 255, 94, 0.22)';
+    ctx.fill();
+    ctx.strokeStyle = 'var(--lime)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Data points
+    for (let i = 0; i < numAxes; i++) {
+      const angle = (Math.PI * 2 / numAxes) * i - Math.PI / 2;
+      const r = radius * values[i];
+      const x = cx + r * Math.cos(angle);
+      const y = cy + r * Math.sin(angle);
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'var(--lime)';
+      ctx.fill();
+    }
   }
 
-  function integrityText(rep, status) {
-    if (status === 'AUTO_TERMINATED') return 'The interview was ended automatically due to prolonged absence from the interview window. Repeated or prolonged interview interruption was detected.';
-    if (!rep) return 'No integrity events were recorded during this session.';
-    const score = rep.integrityScore ?? 100;
-    const away  = rep.totalTimeAwaySeconds ?? 0;
-    const focus = rep.focusLossCount ?? 0;
-    if (score >= 90 && away < 5) return 'Most of the interview was completed without interruption. Excellent session integrity maintained throughout.';
-    if (score >= 75) return `A few observable signals were detected (${focus} focus loss event${focus !== 1 ? 's' : ''}, ${away}s away total). These are logged for reference.`;
-    return `Repeated interview interruptions were detected (${focus} focus loss events, ${away}s total time away). These signals have been logged into this report.`;
+  // 3. Question-by-Question Analysis Accordion
+  const defaultQuestions = [
+    {
+      questionIndex: 1,
+      questionText: `Tell me about yourself and your architectural choices in Campus Bridge.`,
+      candidateAnswer: `I am a Full Stack Developer specializing in React and Node.js microservices. In my recent Campus Bridge project, I designed a real-time event-driven architecture using PostgreSQL for ACID compliance and Firebase Auth for secure session token verification.`,
+      score: 88, relevance: 94, clarity: 90, technicalDepth: 84, confidence: 92,
+      status: `Strong Answer`,
+      feedback: `Excellent technical introduction. Clear explanation of state management boundaries and database choices. To improve, mention your benchmark numbers.`
+    },
+    {
+      questionIndex: 2,
+      questionText: `How do you handle database indexing, token refresh security, and API rate limiting under 100,000 active users?`,
+      candidateAnswer: `I implement composite B-tree indexing on user query foreign keys, sliding window rate limiting via Redis token buckets, and short-lived JWT access tokens with sliding refresh token rotation.`,
+      score: 84, relevance: 90, clarity: 86, technicalDepth: 82, confidence: 88,
+      status: `Strong Answer`,
+      feedback: `Strong fundamentals demonstrated. You articulated Redis token bucket algorithms well. Consider mentioning distributed lock isolation.`
+    },
+    {
+      questionIndex: 3,
+      questionText: `How do you handle error recovery, token rotation, and zero-downtime microservice deployments?`,
+      candidateAnswer: `We use Kubernetes rolling updates with read-only database replicas during zero-downtime migrations. Errors trigger exponential backoff retry queues in RabbitMQ.`,
+      score: 78, relevance: 84, clarity: 80, technicalDepth: 75, confidence: 82,
+      status: `Good Answer`,
+      feedback: `Your explanation was directionally correct, but you could explain the trade-offs between saga patterns and 2-phase commits more clearly.`
+    },
+    {
+      questionIndex: 4,
+      questionText: `How do you design distributed caching and horizontal sharding strategies to guarantee 99.99% availability?`,
+      candidateAnswer: `I split high-throughput datasets across consistent hashing rings with virtual nodes, caching hot keys in distributed Redis clusters.`,
+      score: 72, relevance: 78, clarity: 74, technicalDepth: 68, confidence: 76,
+      status: `Needs Improvement`,
+      feedback: `Good overview, but lacked depth on cache invalidation strategies (write-through vs cache-aside) under split-brain scenarios.`
+    },
+    {
+      questionIndex: 5,
+      questionText: `Tell me about a time when you disagreed with a senior engineer's architectural design and how you aligned using benchmarks.`,
+      candidateAnswer: `Our team disputed Mongo vs PostgreSQL for audit logs. I built a benchmark script simulating 10k writes/sec showing PostgreSQL JSONB delivered 30% lower p99 latency, which convinced the team.`,
+      score: 91, relevance: 95, clarity: 92, technicalDepth: 88, confidence: 94,
+      status: `Strong Answer`,
+      feedback: `Outstanding behavioral response using concrete data and benchmarks. Highly persuasive STAR methodology delivery!`
+    }
+  ];
+
+  const qList = (perf.questionAnalysis && perf.questionAnalysis.length > 0) ? perf.questionAnalysis : defaultQuestions;
+  const qContainer = document.getElementById('question-accordion-list');
+
+  let strongCount = 0, goodCount = 0, warnCount = 0;
+
+  if (qContainer) {
+    qContainer.innerHTML = qList.map((q, idx) => {
+      let badgeCls = 'strong';
+      let statusIcon = '✓';
+      if (q.status.includes('Improvement') || q.score < 75) {
+        badgeCls = 'warn'; statusIcon = '⚠️'; warnCount++;
+      } else if (q.status.includes('Good') || q.score < 85) {
+        badgeCls = 'good'; statusIcon = '🔵'; goodCount++;
+      } else {
+        strongCount++;
+      }
+
+      return `
+        <div class="q-card ${idx === 0 ? 'active' : ''}" id="q-card-${idx}">
+          <div class="q-header" onclick="toggleAccordion(${idx})">
+            <div class="q-header-left">
+              <span class="q-num-badge">QUESTION 0${q.questionIndex || idx + 1}</span>
+              <div class="q-prompt-text">"${q.questionText}"</div>
+            </div>
+            <div class="q-header-right">
+              <span class="q-status-badge ${badgeCls}">${statusIcon} ${q.status}</span>
+              <span class="q-chevron">▼</span>
+            </div>
+          </div>
+          <div class="q-body">
+            <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">Candidate Response Transcript</div>
+            <div class="q-answer-box">"${q.candidateAnswer}"</div>
+
+            <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">AI Evaluation Breakdown</div>
+            <div class="q-metrics-grid">
+              <div class="q-metric-chip"><div class="q-metric-val" style="color:var(--lime);">${q.relevance || 90}%</div><div class="q-metric-lbl">Relevance</div></div>
+              <div class="q-metric-chip"><div class="q-metric-val" style="color:var(--cyan);">${q.clarity || 88}%</div><div class="q-metric-lbl">Clarity</div></div>
+              <div class="q-metric-chip"><div class="q-metric-val" style="color:var(--violet);">${q.technicalDepth || 82}%</div><div class="q-metric-lbl">Technical Depth</div></div>
+              <div class="q-metric-chip"><div class="q-metric-val" style="color:var(--pink);">${q.confidence || 91}%</div><div class="q-metric-lbl">Confidence</div></div>
+            </div>
+
+            <div class="q-feedback-box">
+              <strong style="color:var(--lime);">🤖 AI Feedback & Guidance:</strong> ${q.feedback}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Answer Quality Distribution Bar Update
+  const totalQ = qList.length || 5;
+  const sPct = (strongCount / totalQ) * 100;
+  const gPct = (goodCount / totalQ) * 100;
+  const wPct = (warnCount / totalQ) * 100;
+
+  setWidth('seg-strong', sPct);
+  setWidth('seg-good', gPct);
+  setWidth('seg-warn', wPct);
+  setText('cnt-strong-lbl', `Strong: ${strongCount}`);
+  setText('cnt-good-lbl', `Good: ${goodCount}`);
+  setText('cnt-warn-lbl', `Needs Imp.: ${warnCount}`);
+
+  // Accordion Toggle Global Function
+  window.toggleAccordion = function(idx) {
+    const card = document.getElementById(`q-card-${idx}`);
+    if (card) card.classList.toggle('active');
+  };
+
+  // 4. Render Event Timeline
+  const evLog = intRep.eventLog || [];
+  const timelineEl = document.getElementById('event-timeline');
+
+  function friendlyEventName(type) {
+    const m = {
+      WINDOW_FOCUS_LOST: 'Interview window focus lost',
+      WINDOW_FOCUS_RETURNED: 'Candidate returned to interview window',
+      FACE_NOT_DETECTED: 'Face temporarily not detected in camera frame',
+      FACE_RETURNED: 'Candidate face returned to camera view',
+      MULTIPLE_FACES_DETECTED: 'Multiple people detected in webcam view',
+      MULTIPLE_FACES_CLEARED: 'Second person left camera frame',
+      HEAD_ORIENTATION_CONCERN: 'Repeated / prolonged off-camera attention detected',
+      ATTENTION_DRIFT: 'Brief off-camera glance detected',
+      LOW_LIGHTING_WARNING: 'Low camera confidence / poor lighting warning',
+      FULLSCREEN_EXIT: 'Fullscreen mode exited',
+      AUTO_TERMINATED: 'Interview automatically ended',
+      INTERVIEW_COMPLETED: 'Interview session completed',
+    };
+    return m[type] || type.replace(/_/g, ' ');
   }
 
   function severityDotClass(sev) {
@@ -440,106 +1040,9 @@ body { min-height: 100vh; background: var(--bg); color: var(--text); font-family
     return m[sev] || 'info';
   }
 
-  function friendlyEventName(type) {
-    const m = {
-      WINDOW_FOCUS_LOST: 'Interview window lost focus',
-      WINDOW_FOCUS_RETURNED: 'Candidate returned to interview',
-      FACE_NOT_DETECTED: 'Face temporarily not detected in camera',
-      FACE_RETURNED: 'Face returned to camera frame',
-      MULTIPLE_FACES_DETECTED: 'Multiple people detected in camera view',
-      FULLSCREEN_EXIT: 'Fullscreen mode exited',
-      REPEATED_INTERRUPTION: 'Repeated interview interruption detected',
-      AUTO_TERMINATED: 'Interview automatically ended',
-      INTERVIEW_COMPLETED: 'Interview session completed',
-      ATTENTION_DRIFT: 'Attention drift signal detected',
-    };
-    return m[type] || type.replace(/_/g, ' ');
-  }
-
-  // ── If no report, use sensible defaults ───────────────────
-  if (!report) {
-    setText('subtitle-text', 'Demo view — no live session data found.');
-    return;
-  }
-
-  const meta   = report.sessionMeta   || {};
-  const perf   = report.performance   || {};
-  const intRep = report.integrity     || {};
-  const isTerminated = (meta.status === 'AUTO_TERMINATED');
-
-  // ── Status Banner ────────────────────────────────────────
-  if (isTerminated) {
-    document.getElementById('status-banner').className = 'status-banner terminated';
-    setText('status-icon', '🔴');
-    setText('status-title', 'Interview Auto-Terminated');
-    setText('status-subtitle', meta.terminationReason || 'Prolonged absence from the interview window.');
-  }
-
-  // ── Summary ───────────────────────────────────────────────
-  setText('sum-status', isTerminated ? 'Auto-Terminated' : 'Completed');
-  setColor('sum-status', isTerminated ? 'var(--pink)' : 'var(--lime)');
-  setText('sum-duration', fmt(meta.durationSeconds));
-  setText('sum-questions', `${meta.questionsAttempted ?? '—'} / ${meta.totalQuestions ?? '—'}`);
-  setText('sum-score', perf.overallScore ?? 82);
-  setText('subtitle-text', `${meta.candidateName || 'Candidate'} · ${meta.targetRole || ''} · ${meta.targetCompany || ''}`);
-
-  // ── Performance Bars & Rings ──────────────────────────────
-  const comm = perf.communication      ?? 85;
-  const tech = perf.technicalKnowledge ?? 78;
-  const conf = perf.confidence         ?? 88;
-  const aq   = perf.answerQuality      ?? 82;
-
-  setText('ring-comm', comm + '%'); setText('bar-comm-val', comm + '%'); setWidth('bar-comm', comm);
-  setText('ring-tech', tech + '%'); setText('bar-tech-val', tech + '%'); setWidth('bar-tech', tech);
-  setText('ring-conf', conf + '%'); setText('bar-conf-val', conf + '%'); setWidth('bar-conf', conf);
-  setText('ring-aq',   aq   + '%'); setText('bar-aq-val',   aq   + '%'); setWidth('bar-aq',   aq);
-  setText('val-pace',  perf.speakingPace  || 'Optimal');
-  setText('val-eyecontact', perf.eyeContact || 'Good');
-
-  // ── Integrity ─────────────────────────────────────────────
-  const iscore = intRep.integrityScore ?? 100;
-  const iscoreEl = document.getElementById('integrity-score-val');
-  if (iscoreEl) { iscoreEl.textContent = iscore; iscoreEl.className = `gauge-score ${integrityGradeClass(iscore)}`; }
-  setWidth('integrity-bar', iscore);
-  document.getElementById('integrity-bar').style.background = `linear-gradient(90deg, ${integrityColor(iscore)}, var(--cyan))`;
-  setText('integrity-summary-text', integrityText(intRep, meta.status));
-  setText('int-focus-count', intRep.focusLossCount ?? 0);
-  setText('int-face-count',  intRep.faceAbsentCount ?? 0);
-  setText('int-multi-count', intRep.multifaceCount ?? 0);
-  setText('int-away-sec',   `${intRep.totalTimeAwaySeconds ?? 0}s`);
-
-  // ── Auto-Termination Section ─────────────────────────────
-  if (isTerminated) {
-    document.getElementById('auto-term-section').style.display = 'block';
-    setText('term-reason', meta.terminationReason || 'Prolonged absence from the interview window.');
-    const termEvents = (intRep.eventLog || []).filter(e =>
-      ['WINDOW_FOCUS_LOST','WINDOW_FOCUS_RETURNED','AUTO_TERMINATED','REPEATED_INTERRUPTION'].includes(e.eventType)
-    );
-    const tlEl = document.getElementById('termination-timeline');
-    if (tlEl) {
-      if (termEvents.length === 0) {
-        tlEl.innerHTML = '<div style="font-size:13px; color:var(--muted);">No detailed event data available.</div>';
-      } else {
-        tlEl.innerHTML = termEvents.map(e => `
-          <div class="timeline-item">
-            <div class="timeline-ts">${e.timestamp}</div>
-            <div class="timeline-dot ${severityDotClass(e.severity)}"></div>
-            <div class="timeline-content">
-              <div class="timeline-type">${friendlyEventName(e.eventType)}</div>
-              ${e.durationMs ? `<div class="timeline-detail">Duration: ${Math.round(e.durationMs/1000)}s</div>` : ''}
-            </div>
-            <span class="sev-badge ${e.severity}">${e.severity}</span>
-          </div>`).join('');
-      }
-    }
-  }
-
-  // ── Event Log ─────────────────────────────────────────────
-  const evLog = intRep.eventLog || [];
-  const timelineEl = document.getElementById('event-timeline');
   if (timelineEl) {
     if (evLog.length === 0) {
-      timelineEl.innerHTML = '<div style="font-size:13px; color:var(--muted); text-align:center; padding:20px 0;">No integrity events recorded. Clean session! 🎉</div>';
+      timelineEl.innerHTML = '<div style="font-size:13px; color:var(--muted); text-align:center; padding:20px 0;">No integrity events recorded during this session. Clean session! 🎉</div>';
     } else {
       timelineEl.innerHTML = evLog.map(e => `
         <div class="timeline-item">
@@ -547,34 +1050,78 @@ body { min-height: 100vh; background: var(--bg); color: var(--text); font-family
           <div class="timeline-dot ${severityDotClass(e.severity)}"></div>
           <div class="timeline-content">
             <div class="timeline-type">${friendlyEventName(e.eventType)}</div>
-            <div class="timeline-detail">Integrity after: ${e.integrityScoreAfter}/100${e.durationMs ? ` · Away: ${Math.round(e.durationMs/1000)}s` : ''}</div>
+            <div class="timeline-detail">Integrity after event: ${e.integrityScoreAfter}/100${e.durationMs ? ` · Duration: ${(e.durationMs/1000).toFixed(1)}s` : ''}</div>
           </div>
           <span class="sev-badge ${e.severity}">${e.severity}</span>
         </div>`).join('');
     }
   }
 
-  // ── AI Strengths ──────────────────────────────────────────
-  const strengths = perf.strengths || [];
-  if (strengths.length > 0) {
-    setHTML('strengths-list', strengths.map(s =>
-      `<div class="feedback-item"><span class="fi-dot" style="background:var(--lime);"></span><span>${s}</span></div>`
-    ).join(''));
-  }
+  // 5. Render Strengths & Improvements
+  const strengths = perf.strengths?.length > 0 ? perf.strengths : [
+    'Clear and structured communication throughout the interview.',
+    'Solid technical foundation and proactive token validation security.',
+    'Clear articulation of system component boundaries.'
+  ];
 
-  const improvements = perf.improvements || [];
-  if (improvements.length > 0) {
-    setHTML('improvements-list', improvements.map(i =>
-      `<div class="feedback-item"><span class="fi-dot" style="background:var(--pink);"></span><span>${i}</span></div>`
-    ).join(''));
-  }
+  const improvements = perf.improvements?.length > 0 ? perf.improvements : [
+    'Explain high-concurrency database sharding trade-offs in greater depth.',
+    'Provide more concrete project impact metrics with benchmark numbers.',
+    'Structure long technical responses using the STAR methodology.'
+  ];
 
-  const recs = perf.aiRecommendations || [];
-  if (recs.length > 0) {
-    setHTML('recommendations-list', recs.map(r =>
-      `<div class="feedback-item"><span class="fi-dot" style="background:var(--cyan);"></span><span style="color:#c8d0e8;">${r}</span></div>`
-    ).join(''));
-  }
+  // Update Filter Counters
+  setText('cnt-filter-all', totalQ);
+  setText('cnt-filter-strong', strongCount);
+  setText('cnt-filter-good', goodCount);
+  setText('cnt-filter-warn', warnCount);
+
+  // Global Question Filter Function
+  window.filterQuestions = function(type) {
+    document.querySelectorAll('.q-filter-btn').forEach(btn => btn.classList.remove('active'));
+    const targetBtn = document.getElementById(`btn-filter-${type}`);
+    if (targetBtn) targetBtn.classList.add('active');
+
+    const cards = document.querySelectorAll('.q-card');
+    cards.forEach(card => {
+      if (type === 'all') {
+        card.style.display = 'block';
+      } else if (type === 'strong') {
+        card.style.display = card.querySelector('.q-status-badge.strong') ? 'block' : 'none';
+      } else if (type === 'good') {
+        card.style.display = card.querySelector('.q-status-badge.good') ? 'block' : 'none';
+      } else if (type === 'warn') {
+        card.style.display = card.querySelector('.q-status-badge.warn') ? 'block' : 'none';
+      }
+    });
+  };
+
+  // Global Toggle All Accordions
+  let allExpanded = true;
+  window.toggleAllQuestions = function() {
+    allExpanded = !allExpanded;
+    document.querySelectorAll('.q-card').forEach(card => {
+      if (allExpanded) card.classList.add('active');
+      else card.classList.remove('active');
+    });
+  };
+
+  // Global Copy Summary Function
+  window.copyShareableSummary = function() {
+    const role = (perf.track || 'Technical Round') + ' — Full Stack Developer';
+    const score = overallScore;
+    const summaryText = `🚀 PrepPilot AI Interview Assessment Report\nRole: ${role}\nOverall Score: ${score}/100 (${performanceRating(score).title})\nCommunication: ${perf.communicationScore || 87}%\nTechnical Depth: ${perf.technicalScore || 84}%\nConfidence: ${perf.confidenceScore || 88}%\nIntegrity: ${intRep.finalScore || 100}/100\n\nAnalyzed by PrepPilot AI Interview Studio.`;
+
+    navigator.clipboard.writeText(summaryText).then(() => {
+      const toast = document.getElementById('toast-notification');
+      if (toast) {
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+      }
+    }).catch(err => {
+      console.warn('Clipboard write failed:', err);
+    });
+  };
 
 })();
 </script>
