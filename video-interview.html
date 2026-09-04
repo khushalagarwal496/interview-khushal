@@ -463,6 +463,137 @@ header {
   </div>
 </div>
 
+<!-- ══════════════ CAMERA PERMISSION SCRIPT (plain, not module) ══════════════ -->
+<!-- This runs independently of ES module imports — always works on Vercel/HTTPS -->
+<script>
+(function() {
+  'use strict';
+
+  // Shared stream reference
+  window._mediaStream = null;
+
+  window._startCamera = async function() {
+    var permBtn     = document.getElementById('request-perm-btn');
+    var msgBox      = document.getElementById('id-verification-msg');
+    var chkCount    = document.getElementById('id-check-count');
+    var placeholder = document.getElementById('cam-placeholder');
+    var verifyOverlay = document.getElementById('verify-identity-btn');
+    var modalVid    = document.getElementById('modal-webcam-feed');
+    var mainVid     = document.getElementById('webcam-feed');
+
+    if (permBtn) {
+      permBtn.innerHTML = '⏳ Waiting for browser permission…';
+      permBtn.style.opacity = '0.7';
+      permBtn.style.pointerEvents = 'none';
+    }
+
+    try {
+      var stream = null;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: true });
+      } catch (e1) {
+        try { stream = await navigator.mediaDevices.getUserMedia({ video: true }); } catch(e2) {
+          try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch(e3) {
+            throw e3;
+          }
+        }
+      }
+
+      if (stream) {
+        window._mediaStream = stream;
+
+        // Attach to video elements
+        [modalVid, mainVid].forEach(function(vid) {
+          if (vid) { vid.srcObject = stream; vid.muted = true; vid.play().catch(function(){}); }
+        });
+
+        // Hide placeholder, show capture button
+        if (placeholder) placeholder.style.display = 'none';
+        if (verifyOverlay) verifyOverlay.style.display = 'block';
+
+        if (permBtn) {
+          permBtn.innerHTML = '✅ Camera &amp; Mic Active — Now click <strong style="color:#c8ff5e">📸 Capture &amp; Verify</strong> on the video';
+          permBtn.style.background = 'rgba(74,222,128,0.15)';
+          permBtn.style.borderColor = 'rgba(74,222,128,0.4)';
+          permBtn.style.color = '#86efac';
+          permBtn.style.opacity = '1';
+          permBtn.style.pointerEvents = 'auto';
+        }
+
+        if (chkCount) {
+          chkCount.textContent = '✓ Camera enabled';
+          chkCount.style.color = '#4ade80';
+          chkCount.style.borderColor = 'rgba(74,222,128,0.3)';
+        }
+
+        if (msgBox) {
+          msgBox.textContent = '✅ Camera active! Now click "📸 Capture & Verify" inside the video box.';
+          msgBox.style.background = 'rgba(74,222,128,0.12)';
+          msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
+          msgBox.style.color = '#86efac';
+        }
+      }
+    } catch (err) {
+      console.warn('Camera permission denied or unavailable:', err);
+      if (permBtn) {
+        permBtn.innerHTML = '❌ Camera blocked — Click the 🔒 lock icon in the address bar → Allow Camera';
+        permBtn.style.background = 'rgba(239,68,68,0.15)';
+        permBtn.style.borderColor = 'rgba(239,68,68,0.5)';
+        permBtn.style.color = '#fca5a5';
+        permBtn.style.opacity = '1';
+        permBtn.style.pointerEvents = 'auto';
+      }
+      if (msgBox) {
+        msgBox.innerHTML = '⚠️ Camera blocked. Click the <strong>🔒 lock icon</strong> in the address bar → Site settings → Allow Camera &amp; Mic.';
+        msgBox.style.background = 'rgba(239,68,68,0.12)';
+        msgBox.style.borderColor = 'rgba(239,68,68,0.4)';
+        msgBox.style.color = '#fca5a5';
+      }
+    }
+  };
+
+  window._captureIdentity = function() {
+    var modalVid   = document.getElementById('modal-webcam-feed');
+    var mainVid    = document.getElementById('webcam-feed');
+    var msgBox     = document.getElementById('id-verification-msg');
+    var snapImg    = document.getElementById('modal-snapshot-preview');
+    var snapBadge  = document.getElementById('modal-snapshot-badge');
+    var chkVisible = document.getElementById('id-check-visible');
+    var chkCap     = document.getElementById('id-check-captured');
+    var verifyBtn  = document.getElementById('verify-identity-btn');
+
+    var vid = (modalVid && modalVid.srcObject) ? modalVid : mainVid;
+    var photoUrl = null;
+
+    // Take snapshot from live video
+    if (vid && vid.srcObject && vid.videoWidth > 0) {
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = 320; canvas.height = 240;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(vid, 0, 0, 320, 240);
+        photoUrl = canvas.toDataURL('image/jpeg', 0.85);
+      } catch(e) { console.warn('Snapshot error:', e); }
+    }
+
+    var savedPhoto = photoUrl || 'interviewee.jpg';
+    localStorage.setItem('prepPilotCandidateSnapshot', savedPhoto);
+
+    if (snapImg) { snapImg.src = savedPhoto; snapImg.style.display = 'block'; }
+    if (snapBadge) { snapBadge.textContent = '✓ Identity Verified'; snapBadge.style.display = 'block'; }
+    if (verifyBtn) { verifyBtn.textContent = '✅ Verified!'; verifyBtn.style.borderColor = '#4ade80'; verifyBtn.style.color = '#4ade80'; }
+    if (chkVisible) { chkVisible.textContent = '✓ Face visible'; chkVisible.style.color = '#4ade80'; chkVisible.style.borderColor = 'rgba(74,222,128,0.3)'; }
+    if (chkCap) { chkCap.textContent = '✓ Identity captured'; chkCap.style.color = '#4ade80'; chkCap.style.borderColor = 'rgba(74,222,128,0.3)'; }
+    if (msgBox) {
+      msgBox.textContent = '✅ Identity verified. You can now start your interview!';
+      msgBox.style.background = 'rgba(74,222,128,0.12)';
+      msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
+      msgBox.style.color = '#86efac';
+    }
+  };
+})();
+</script>
+
 <!-- ══════════════ SCRIPT ENGINE ══════════════ -->
 <script type="module">
 import PROCTORING_CONFIG from './services/proctoringConfig.js';
@@ -470,6 +601,7 @@ import IntegrityService from './services/integrityService.js';
 import ProctoringService from './services/proctoringService.js';
 import FaceDetectionService from './services/faceDetectionService.js';
 import AnalyticsService from './services/analyticsService.js';
+
 
 // ─── STATE ───────────────────────────────────────────────────
 let sessionId        = `session_${Date.now()}`;
@@ -485,7 +617,14 @@ let idleTimer        = null;
 let candidateTranscript = "";
 let timerSeconds     = 0;
 let sessionTimerInterval = null;
-let mediaStream      = null;
+// mediaStream is shared with plain-script camera handler via window._mediaStream
+Object.defineProperty(window, 'mediaStream', {
+  get: () => window._mediaStream,
+  set: (v) => { window._mediaStream = v; },
+  configurable: true
+});
+var mediaStream = null; // local alias — accesses window._mediaStream via proxy above
+
 let currentEyeContactPct = 100;
 let currentSpeakingPace = 'Optimal';
 let speechStartTime  = 0;
@@ -959,118 +1098,32 @@ window.addEventListener('DOMContentLoaded', () => {
   const mainVid  = document.getElementById('webcam-feed');
   const canvasOverlay = document.getElementById('landmark-canvas');
 
-  // ── CAMERA SETUP ─────────────────────────────────────────────
-  // Exposed as window globals so onclick= attributes can call them
-  // (ES module scope doesn't export to HTML onclick= by default)
+  // ── CAMERA SETUP (ES module side) ────────────────────────────
+  // The plain <script> above handles getUserMedia and camera UI.
+  // Here we hook FaceDetectionService init onto window._startCamera
+  // so face detection starts after camera is activated.
 
-  window._startCamera = async () => {
-    const permBtn = document.getElementById('request-perm-btn');
-    const msgBox  = document.getElementById('id-verification-msg');
-    const chkCount   = document.getElementById('id-check-count');
-    const chkVisible = document.getElementById('id-check-visible');
-    const placeholder = document.getElementById('cam-placeholder');
-    const verifyOverlay = document.getElementById('verify-identity-btn');
-
-    if (permBtn) {
-      permBtn.textContent = '⏳ Requesting permission…';
-      permBtn.style.opacity = '0.7';
-      permBtn.style.pointerEvents = 'none';
-    }
-
-    try {
-      let stream = null;
+  const _baseCameraStart = window._startCamera;
+  window._startCamera = async function() {
+    await _baseCameraStart();
+    // After camera is active, init face detection
+    if (window._mediaStream) {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: true });
-      } catch (e1) {
-        console.warn('Video+Audio denied, trying video-only:', e1);
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        } catch (e2) {
-          console.warn('Video-only denied, trying audio-only:', e2);
-          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        }
-      }
-
-      if (stream) {
-        mediaStream = stream;
-
-        // Attach stream to both modal preview and main interview video
-        [modalVid, mainVid].forEach(vid => {
-          if (vid) { vid.srcObject = stream; vid.muted = true; vid.play().catch(() => {}); }
+        await FaceDetectionService.init(modalVid || mainVid, canvasOverlay, {
+          onStateChange: handleStateChange,
+          onWarning: (evt) => showBannerMsg(`⚠️ ${evt.replace(/_/g,' ')}`, false)
         });
-
-        // Hide camera placeholder, show live feed
-        if (placeholder) placeholder.style.display = 'none';
-        if (verifyOverlay) verifyOverlay.style.display = 'block';
-
-        if (permBtn) {
-          permBtn.innerHTML = '✅ Camera & Mic Active — Now click <strong>📸 Capture & Verify</strong> below';
-          permBtn.style.background = 'rgba(74,222,128,0.15)';
-          permBtn.style.borderColor = 'rgba(74,222,128,0.4)';
-          permBtn.style.color = '#86efac';
-          permBtn.style.opacity = '1';
-          permBtn.style.pointerEvents = 'auto';
-        }
-
-        if (chkCount) { chkCount.textContent = '✓ Camera enabled'; chkCount.style.color = '#4ade80'; chkCount.style.borderColor = 'rgba(74,222,128,0.3)'; }
-        if (msgBox) {
-          msgBox.textContent = '✅ Camera active! Now click "📸 Capture & Verify" inside the video box.';
-          msgBox.style.background = 'rgba(74,222,128,0.12)';
-          msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
-          msgBox.style.color = '#86efac';
-        }
-
-        // Initialize face detection service
-        try {
-          await FaceDetectionService.init(modalVid || mainVid, canvasOverlay, {
-            onStateChange: handleStateChange,
-            onWarning: (evt) => showBannerMsg(`⚠️ ${evt.replace(/_/g,' ')}`, false)
-          });
-        } catch(e) { console.warn('Vision init warning:', e); }
-      }
-    } catch(err) {
-      console.warn('Camera permission denied:', err);
-      if (permBtn) {
-        permBtn.innerHTML = '❌ Permission Denied — Click the 🔒 lock icon in address bar to allow camera';
-        permBtn.style.background = 'rgba(239,68,68,0.15)';
-        permBtn.style.borderColor = 'rgba(239,68,68,0.5)';
-        permBtn.style.color = '#fca5a5';
-        permBtn.style.opacity = '1';
-        permBtn.style.pointerEvents = 'auto';
-      }
-      if (msgBox) {
-        msgBox.innerHTML = '⚠️ Camera blocked. Click the <strong>🔒 lock icon</strong> in your browser address bar → Site settings → Allow Camera & Mic';
-        msgBox.style.background = 'rgba(239,68,68,0.12)';
-        msgBox.style.borderColor = 'rgba(239,68,68,0.4)';
-        msgBox.style.color = '#fca5a5';
-      }
+      } catch(e) { console.warn('Vision init warning:', e); }
     }
   };
 
-  window._captureIdentity = () => {
-    const msgBox   = document.getElementById('id-verification-msg');
-    const snapImg  = document.getElementById('modal-snapshot-preview');
-    const snapBadge = document.getElementById('modal-snapshot-badge');
-    const chkVisible = document.getElementById('id-check-visible');
-    const chkCap   = document.getElementById('id-check-captured');
-    const verifyBtn = document.getElementById('verify-identity-btn');
-    const activeVid = modalVid || mainVid;
-
-    const res = FaceDetectionService.captureSessionReference(activeVid);
-
-    const photoUrl = res.photoDataUrl || null;
-    localStorage.setItem('prepPilotCandidateSnapshot', photoUrl || 'interviewee.jpg');
-
-    if (snapImg) { snapImg.src = photoUrl || 'interviewee.jpg'; snapImg.style.display = 'block'; }
-    if (snapBadge) { snapBadge.textContent = '✓ Identity Verified'; snapBadge.style.display = 'block'; }
-    if (verifyBtn) { verifyBtn.textContent = '✅ Verified!'; verifyBtn.style.borderColor = '#4ade80'; verifyBtn.style.color = '#4ade80'; }
-    if (chkVisible) { chkVisible.textContent = '✓ Face visible'; chkVisible.style.color = '#4ade80'; chkVisible.style.borderColor = 'rgba(74,222,128,0.3)'; }
-    if (chkCap) { chkCap.textContent = '✓ Identity captured'; chkCap.style.color = '#4ade80'; chkCap.style.borderColor = 'rgba(74,222,128,0.3)'; }
-    if (msgBox) {
-      msgBox.textContent = '✅ Identity verified. You can now start your interview!';
-      msgBox.style.background = 'rgba(74,222,128,0.12)';
-      msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
-      msgBox.style.color = '#86efac';
+  // Hook _captureIdentity to also use FaceDetectionService if available
+  const _baseCaptureIdentity = window._captureIdentity;
+  window._captureIdentity = function() {
+    _baseCaptureIdentity();
+    // Also save FaceDetectionService reference if landmarks available
+    if (window._mediaStream) {
+      try { FaceDetectionService.captureSessionReference(modalVid || mainVid); } catch(e) {}
     }
   };
 
