@@ -241,53 +241,58 @@ header {
 
 <!-- ══════════════ INTERVIEW INTEGRITY & IDENTITY CHECK MODAL ══════════════ -->
 <div class="modal-overlay active" id="consent-modal">
-  <div class="modal-card" style="max-width:620px; text-align:center; max-height: 92vh; overflow-y: auto;">
+  <div class="modal-card" style="max-width:580px; text-align:center; max-height: 92vh; overflow-y: auto;">
     <div>
       <div style="font-size:38px; margin-bottom:6px">🛡️</div>
       <h2 style="font-family:'Outfit',sans-serif; font-size:23px; font-weight:800; color:#fff">Identity Check & Session Integrity</h2>
       <p style="font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.5;">
-        Before starting your interview, please complete a quick session identity check.
+        Before starting your interview, allow camera &amp; mic access below.
       </p>
     </div>
 
     <!-- PRE-INTERVIEW IDENTITY CHECK PREVIEW BOX -->
     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:18px; padding:16px; margin:12px 0; text-align:left;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <span style="font-family:'Outfit',sans-serif; font-size:13.5px; font-weight:700; color:#fff;">📷 Identity Verification</span>
-        <div style="display:flex; gap:8px;">
-          <button id="request-perm-btn" style="padding:6px 12px; font-size:11.5px; font-weight:700; background:rgba(59,130,246,0.2); border:1px solid #3b82f6; color:#93c5fd; border-radius:10px; cursor:pointer; transition:all 0.2s;">
-            🎙️ Enable Camera & Mic
-          </button>
-          <button id="verify-identity-btn" style="padding:6px 14px; font-size:12px; font-weight:700; background:rgba(200,255,94,0.15); border:1px solid var(--lime); color:var(--lime); border-radius:10px; cursor:pointer; transition:all 0.2s;">
-            Verify Identity
-          </button>
-        </div>
+
+      <!-- STEP 1: Big Camera Button -->
+      <div id="camera-permission-step" style="text-align:center; margin-bottom:14px;">
+        <button id="request-perm-btn" onclick="window._startCamera()" style="width:100%; padding:14px 20px; font-size:15px; font-weight:800; background:linear-gradient(135deg,rgba(59,130,246,0.3),rgba(99,102,241,0.3)); border:2px solid #3b82f6; color:#93c5fd; border-radius:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; letter-spacing:0.02em; transition:all 0.2s;">
+          <span style="font-size:22px">📸</span> Click Here to Enable Camera &amp; Microphone
+        </button>
+        <p style="font-size:11px; color:var(--muted); margin-top:8px;">Your browser will ask for permission — click <strong style="color:#93c5fd">Allow</strong> to continue.</p>
       </div>
 
       <!-- Live Modal Video & Captured Snapshot Preview Container -->
-      <div style="position:relative; width:100%; height:165px; background:#080b16; border-radius:14px; overflow:hidden; border:1px solid rgba(200,255,94,0.3); margin-bottom:12px;">
+      <div style="position:relative; width:100%; height:180px; background:#080b16; border-radius:14px; overflow:hidden; border:2px solid rgba(200,255,94,0.2); margin-bottom:12px;">
         <video id="modal-webcam-feed" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:block;"></video>
+        <div id="cam-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:13px;gap:8px;pointer-events:none;">
+          <span style="font-size:36px;opacity:0.4">📷</span>
+          <span>Camera preview will appear here after clicking above</span>
+        </div>
         <img id="modal-snapshot-preview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:none; border:2px solid var(--lime);" alt="Verified Candidate Snapshot"/>
         <div id="modal-snapshot-badge" style="display:none; position:absolute; bottom:8px; left:8px; padding:4px 10px; background:rgba(8,11,22,0.85); border:1px solid var(--lime); color:var(--lime); font-weight:700; font-size:11px; border-radius:8px; backdrop-filter:blur(8px);">
           ✓ Verified Candidate Snapshot
         </div>
+        <!-- Capture Button overlaid on video -->
+        <button id="verify-identity-btn" onclick="window._captureIdentity()" style="display:none; position:absolute; bottom:10px; right:10px; padding:8px 16px; font-size:12px; font-weight:800; background:rgba(8,11,22,0.9); border:2px solid var(--lime); color:var(--lime); border-radius:10px; cursor:pointer; backdrop-filter:blur(8px); transition:all 0.2s;">
+          📸 Capture &amp; Verify
+        </button>
       </div>
 
       <!-- Real-time Verification Checklist -->
       <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-bottom:12px;">
         <div id="id-check-count" style="font-size:11px; font-weight:600; padding:8px 10px; background:rgba(0,0,0,0.3); border-radius:10px; color:var(--muted); border:1px solid rgba(255,255,255,0.06); text-align:center;">
-          ⚪ One face detected
+          ⚪ Camera enabled
         </div>
         <div id="id-check-visible" style="font-size:11px; font-weight:600; padding:8px 10px; background:rgba(0,0,0,0.3); border-radius:10px; color:var(--muted); border:1px solid rgba(255,255,255,0.06); text-align:center;">
-          ⚪ Face clearly visible
+          ⚪ Face visible
         </div>
         <div id="id-check-captured" style="font-size:11px; font-weight:600; padding:8px 10px; background:rgba(0,0,0,0.3); border-radius:10px; color:var(--muted); border:1px solid rgba(255,255,255,0.06); text-align:center;">
-          ⚪ Reference captured
+          ⚪ Identity captured
         </div>
       </div>
 
       <div id="id-verification-msg" style="padding:10px 14px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:12px; font-size:12.5px; color:#93c5fd; font-weight:600; text-align:center;">
-        Please look naturally toward the camera to verify your identity.
+        Click the button above to enable your camera and microphone.
       </div>
     </div>
 
@@ -302,6 +307,7 @@ header {
     <p style="font-size:12px; color:var(--muted); margin-top:6px;">Session will be recorded for <strong id="consent-name" style="color:var(--text)">Candidate</strong></p>
   </div>
 </div>
+
 
 <!-- ══════════════ 10-SECOND COUNTDOWN OVERLAY ══════════════ -->
 <div class="countdown-overlay" id="countdown-overlay">
@@ -948,28 +954,39 @@ window.addEventListener('DOMContentLoaded', () => {
   const dockTag = document.getElementById('dock-round-tag');
   if (dockTag) dockTag.textContent = `• ${round}`;
 
+  // ── SHARED DOM REFS ─────────────────────────────────────────
   const modalVid = document.getElementById('modal-webcam-feed');
-  const mainVid = document.getElementById('webcam-feed');
+  const mainVid  = document.getElementById('webcam-feed');
   const canvasOverlay = document.getElementById('landmark-canvas');
-  const permBtn = document.getElementById('request-perm-btn');
-  const msgBox = document.getElementById('id-verification-msg');
 
-  // Setup explicit media permissions and modal stream preview
-  const setupMediaPermissions = async () => {
+  // ── CAMERA SETUP ─────────────────────────────────────────────
+  // Exposed as window globals so onclick= attributes can call them
+  // (ES module scope doesn't export to HTML onclick= by default)
+
+  window._startCamera = async () => {
+    const permBtn = document.getElementById('request-perm-btn');
+    const msgBox  = document.getElementById('id-verification-msg');
+    const chkCount   = document.getElementById('id-check-count');
+    const chkVisible = document.getElementById('id-check-visible');
+    const placeholder = document.getElementById('cam-placeholder');
+    const verifyOverlay = document.getElementById('verify-identity-btn');
+
+    if (permBtn) {
+      permBtn.textContent = '⏳ Requesting permission…';
+      permBtn.style.opacity = '0.7';
+      permBtn.style.pointerEvents = 'none';
+    }
+
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('getUserMedia is not supported on this browser');
-      }
-
       let stream = null;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: true });
       } catch (e1) {
-        console.warn('Video+Audio request failed, trying video only:', e1);
+        console.warn('Video+Audio denied, trying video-only:', e1);
         try {
           stream = await navigator.mediaDevices.getUserMedia({ video: true });
         } catch (e2) {
-          console.warn('Video-only failed, trying audio only:', e2);
+          console.warn('Video-only denied, trying audio-only:', e2);
           stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         }
       }
@@ -977,53 +994,52 @@ window.addEventListener('DOMContentLoaded', () => {
       if (stream) {
         mediaStream = stream;
 
+        // Attach stream to both modal preview and main interview video
         [modalVid, mainVid].forEach(vid => {
-          if (vid) {
-            vid.srcObject = stream;
-            vid.muted = true;
-            vid.play().catch(e => console.warn('Play video error:', e));
-          }
+          if (vid) { vid.srcObject = stream; vid.muted = true; vid.play().catch(() => {}); }
         });
 
+        // Hide camera placeholder, show live feed
+        if (placeholder) placeholder.style.display = 'none';
+        if (verifyOverlay) verifyOverlay.style.display = 'block';
+
         if (permBtn) {
-          permBtn.textContent = '✅ Camera & Mic Active';
+          permBtn.innerHTML = '✅ Camera & Mic Active — Now click <strong>📸 Capture & Verify</strong> below';
           permBtn.style.background = 'rgba(74,222,128,0.15)';
           permBtn.style.borderColor = 'rgba(74,222,128,0.4)';
           permBtn.style.color = '#86efac';
+          permBtn.style.opacity = '1';
+          permBtn.style.pointerEvents = 'auto';
         }
 
-        const chkCount = document.getElementById('id-check-count');
-        const chkVisible = document.getElementById('id-check-visible');
-        const chkCap = document.getElementById('id-check-captured');
-        if (chkCount) { chkCount.textContent = '✓ One face detected'; chkCount.style.color = '#4ade80'; chkCount.style.borderColor = 'rgba(74,222,128,0.3)'; }
-        if (chkVisible) { chkVisible.textContent = '✓ Face clearly visible'; chkVisible.style.color = '#4ade80'; chkVisible.style.borderColor = 'rgba(74,222,128,0.3)'; }
-        if (chkCap) { chkCap.textContent = '✓ Reference captured'; chkCap.style.color = '#4ade80'; chkCap.style.borderColor = 'rgba(74,222,128,0.3)'; }
-
+        if (chkCount) { chkCount.textContent = '✓ Camera enabled'; chkCount.style.color = '#4ade80'; chkCount.style.borderColor = 'rgba(74,222,128,0.3)'; }
         if (msgBox) {
-          msgBox.textContent = 'Identity verified. You can start your interview.';
+          msgBox.textContent = '✅ Camera active! Now click "📸 Capture & Verify" inside the video box.';
           msgBox.style.background = 'rgba(74,222,128,0.12)';
           msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
           msgBox.style.color = '#86efac';
         }
 
-        // Initialize FaceDetectionService for modal check
+        // Initialize face detection service
         try {
           await FaceDetectionService.init(modalVid || mainVid, canvasOverlay, {
             onStateChange: handleStateChange,
-            onWarning: (evt) => showBannerMsg(`⚠️ Integrity Event: ${evt.replace(/_/g, ' ')}`, false)
+            onWarning: (evt) => showBannerMsg(`⚠️ ${evt.replace(/_/g,' ')}`, false)
           });
-        } catch(e) { console.warn('Early vision init warning:', e); }
+        } catch(e) { console.warn('Vision init warning:', e); }
       }
     } catch(err) {
-      console.warn('Camera permission request error:', err);
+      console.warn('Camera permission denied:', err);
       if (permBtn) {
-        permBtn.textContent = '⚠️ Enable Camera & Mic';
+        permBtn.innerHTML = '❌ Permission Denied — Click the 🔒 lock icon in address bar to allow camera';
         permBtn.style.background = 'rgba(239,68,68,0.15)';
-        permBtn.style.borderColor = 'rgba(239,68,68,0.4)';
+        permBtn.style.borderColor = 'rgba(239,68,68,0.5)';
         permBtn.style.color = '#fca5a5';
+        permBtn.style.opacity = '1';
+        permBtn.style.pointerEvents = 'auto';
       }
       if (msgBox) {
-        msgBox.innerHTML = '⚠️ <strong>Camera Access Needed:</strong> Click <em>Enable Camera & Mic</em> or click the lock icon (🔒) next to the URL bar above to allow camera access.';
+        msgBox.innerHTML = '⚠️ Camera blocked. Click the <strong>🔒 lock icon</strong> in your browser address bar → Site settings → Allow Camera & Mic';
         msgBox.style.background = 'rgba(239,68,68,0.12)';
         msgBox.style.borderColor = 'rgba(239,68,68,0.4)';
         msgBox.style.color = '#fca5a5';
@@ -1031,72 +1047,32 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  if (permBtn) {
-    permBtn.addEventListener('click', setupMediaPermissions);
-  }
-  setupMediaPermissions();
+  window._captureIdentity = () => {
+    const msgBox   = document.getElementById('id-verification-msg');
+    const snapImg  = document.getElementById('modal-snapshot-preview');
+    const snapBadge = document.getElementById('modal-snapshot-badge');
+    const chkVisible = document.getElementById('id-check-visible');
+    const chkCap   = document.getElementById('id-check-captured');
+    const verifyBtn = document.getElementById('verify-identity-btn');
+    const activeVid = modalVid || mainVid;
 
-  // Attach button click for Pre-Interview Identity Check button
-  const verifyBtn = document.getElementById('verify-identity-btn');
-  if (verifyBtn) {
-    verifyBtn.addEventListener('click', async () => {
-      if (!mediaStream) {
-        await setupMediaPermissions();
-      }
+    const res = FaceDetectionService.captureSessionReference(activeVid);
 
-      const activeVid = modalVid || mainVid;
-      const res = FaceDetectionService.captureSessionReference(activeVid);
-      const snapImg = document.getElementById('modal-snapshot-preview');
-      const snapBadge = document.getElementById('modal-snapshot-badge');
-      const chkCount = document.getElementById('id-check-count');
-      const chkVisible = document.getElementById('id-check-visible');
-      const chkCap = document.getElementById('id-check-captured');
+    const photoUrl = res.photoDataUrl || null;
+    localStorage.setItem('prepPilotCandidateSnapshot', photoUrl || 'interviewee.jpg');
 
-      if (res.success && res.photoDataUrl) {
-        localStorage.setItem('prepPilotCandidateSnapshot', res.photoDataUrl);
-        if (snapImg) {
-          snapImg.src = res.photoDataUrl;
-          snapImg.style.display = 'block';
-        }
-        if (snapBadge) {
-          snapBadge.textContent = '✓ Verified Candidate Snapshot';
-          snapBadge.style.display = 'block';
-        }
-        if (chkCount) { chkCount.textContent = '✓ One face verified'; chkCount.style.color = '#4ade80'; chkCount.style.borderColor = 'rgba(74,222,128,0.3)'; }
-        if (chkVisible) { chkVisible.textContent = '✓ Face clearly visible'; chkVisible.style.color = '#4ade80'; chkVisible.style.borderColor = 'rgba(74,222,128,0.3)'; }
-        if (chkCap) { chkCap.textContent = '✓ Reference captured'; chkCap.style.color = '#4ade80'; chkCap.style.borderColor = 'rgba(74,222,128,0.3)'; }
-        if (msgBox) {
-          msgBox.textContent = 'Identity verified. You can start your interview.';
-          msgBox.style.background = 'rgba(74,222,128,0.12)';
-          msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
-          msgBox.style.color = '#86efac';
-        }
-      } else {
-        // Fallback candidate profile verification (e.g. Incognito mode or camera unavailable)
-        const fallbackPhoto = 'interviewee.jpg';
-        localStorage.setItem('prepPilotCandidateSnapshot', fallbackPhoto);
-        
-        if (snapImg) {
-          snapImg.src = fallbackPhoto;
-          snapImg.style.display = 'block';
-        }
-        if (snapBadge) {
-          snapBadge.textContent = '✓ Verified Candidate Profile';
-          snapBadge.style.display = 'block';
-        }
-        if (chkCount) { chkCount.textContent = '✓ One face verified'; chkCount.style.color = '#4ade80'; chkCount.style.borderColor = 'rgba(74,222,128,0.3)'; }
-        if (chkVisible) { chkVisible.textContent = '✓ Face clearly visible'; chkVisible.style.color = '#4ade80'; chkVisible.style.borderColor = 'rgba(74,222,128,0.3)'; }
-        if (chkCap) { chkCap.textContent = '✓ Reference captured'; chkCap.style.color = '#4ade80'; chkCap.style.borderColor = 'rgba(74,222,128,0.3)'; }
-
-        if (msgBox) {
-          msgBox.textContent = 'Identity verified. You can start your interview.';
-          msgBox.style.background = 'rgba(74,222,128,0.12)';
-          msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
-          msgBox.style.color = '#86efac';
-        }
-      }
-    });
-  }
+    if (snapImg) { snapImg.src = photoUrl || 'interviewee.jpg'; snapImg.style.display = 'block'; }
+    if (snapBadge) { snapBadge.textContent = '✓ Identity Verified'; snapBadge.style.display = 'block'; }
+    if (verifyBtn) { verifyBtn.textContent = '✅ Verified!'; verifyBtn.style.borderColor = '#4ade80'; verifyBtn.style.color = '#4ade80'; }
+    if (chkVisible) { chkVisible.textContent = '✓ Face visible'; chkVisible.style.color = '#4ade80'; chkVisible.style.borderColor = 'rgba(74,222,128,0.3)'; }
+    if (chkCap) { chkCap.textContent = '✓ Identity captured'; chkCap.style.color = '#4ade80'; chkCap.style.borderColor = 'rgba(74,222,128,0.3)'; }
+    if (msgBox) {
+      msgBox.textContent = '✅ Identity verified. You can now start your interview!';
+      msgBox.style.background = 'rgba(74,222,128,0.12)';
+      msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
+      msgBox.style.color = '#86efac';
+    }
+  };
 
   // Start Interview Button
   document.getElementById('start-interview-btn').addEventListener('click', async () => {
