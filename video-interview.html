@@ -865,29 +865,33 @@ window.addEventListener('DOMContentLoaded', () => {
   // Setup explicit media permissions and modal stream preview
   const setupMediaPermissions = async () => {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia is not supported on this browser');
+      }
+
+      let stream = null;
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
       } catch (e1) {
-        console.warn('Video+Audio getUserMedia failed, trying video only:', e1);
+        console.warn('Video+Audio request failed, trying video only:', e1);
         try {
-          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
         } catch (e2) {
-          console.warn('Video-only getUserMedia failed:', e2);
-          mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          console.warn('Video-only failed, trying audio only:', e2);
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         }
       }
 
-      if (mediaStream) {
-        if (modalVid) {
-          modalVid.srcObject = mediaStream;
-          modalVid.muted = true;
-          try { await modalVid.play(); } catch(e){}
-        }
-        if (mainVid) {
-          mainVid.srcObject = mediaStream;
-          mainVid.muted = true;
-          try { await mainVid.play(); } catch(e){}
-        }
+      if (stream) {
+        mediaStream = stream;
+
+        [modalVid, mainVid].forEach(vid => {
+          if (vid) {
+            vid.srcObject = stream;
+            vid.muted = true;
+            vid.play().catch(e => console.warn('Play video error:', e));
+          }
+        });
 
         if (permBtn) {
           permBtn.textContent = '✅ Camera & Mic Active';
@@ -920,9 +924,9 @@ window.addEventListener('DOMContentLoaded', () => {
         permBtn.style.color = '#fca5a5';
       }
       if (msgBox) {
-        msgBox.textContent = '⚠️ Camera permission is required for identity check. Click "Enable Camera & Mic" or allow access in your browser.';
-        msgBox.style.background = 'rgba(239,68,68,0.1)';
-        msgBox.style.borderColor = 'rgba(239,68,68,0.3)';
+        msgBox.innerHTML = '⚠️ <strong>Camera Access Needed:</strong> Click <em>Enable Camera & Mic</em> or click the lock icon (🔒) next to the URL bar above to allow camera access.';
+        msgBox.style.background = 'rgba(239,68,68,0.12)';
+        msgBox.style.borderColor = 'rgba(239,68,68,0.4)';
         msgBox.style.color = '#fca5a5';
       }
     }
