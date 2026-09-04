@@ -1039,7 +1039,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // Attach button click for Pre-Interview Identity Check button
   const verifyBtn = document.getElementById('verify-identity-btn');
   if (verifyBtn) {
-    verifyBtn.addEventListener('click', () => {
+    verifyBtn.addEventListener('click', async () => {
+      if (!mediaStream) {
+        await setupMediaPermissions();
+      }
+
       const activeVid = modalVid || mainVid;
       const res = FaceDetectionService.captureSessionReference(activeVid);
       const snapImg = document.getElementById('modal-snapshot-preview');
@@ -1058,6 +1062,9 @@ window.addEventListener('DOMContentLoaded', () => {
           snapBadge.textContent = '✓ Verified Candidate Snapshot';
           snapBadge.style.display = 'block';
         }
+        if (chkCount) { chkCount.textContent = '✓ One face verified'; chkCount.style.color = '#4ade80'; chkCount.style.borderColor = 'rgba(74,222,128,0.3)'; }
+        if (chkVisible) { chkVisible.textContent = '✓ Face clearly visible'; chkVisible.style.color = '#4ade80'; chkVisible.style.borderColor = 'rgba(74,222,128,0.3)'; }
+        if (chkCap) { chkCap.textContent = '✓ Reference captured'; chkCap.style.color = '#4ade80'; chkCap.style.borderColor = 'rgba(74,222,128,0.3)'; }
         if (msgBox) {
           msgBox.textContent = 'Identity verified. You can start your interview.';
           msgBox.style.background = 'rgba(74,222,128,0.12)';
