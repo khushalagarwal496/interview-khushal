@@ -239,35 +239,53 @@ header {
   <div class="blob-2"></div>
 </div>
 
-<!-- ══════════════ INTERVIEW INTEGRITY NOTICE MODAL ══════════════ -->
+<!-- ══════════════ INTERVIEW INTEGRITY & IDENTITY CHECK MODAL ══════════════ -->
 <div class="modal-overlay active" id="consent-modal">
-  <div class="modal-card" style="max-width:580px; text-align:center;">
+  <div class="modal-card" style="max-width:620px; text-align:center; max-height: 92vh; overflow-y: auto;">
     <div>
-      <div style="font-size:38px; margin-bottom:10px">🛡️</div>
-      <h2 style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:800; color:#fff">Interview Integrity Notice</h2>
-      <p style="font-size:13px; color:var(--muted); margin-top:6px; line-height:1.6;">
-        During this interview, the system monitors observable interview signals to help maintain session integrity and generate your feedback report.
+      <div style="font-size:38px; margin-bottom:6px">🛡️</div>
+      <h2 style="font-family:'Outfit',sans-serif; font-size:23px; font-weight:800; color:#fff">Identity Check & Session Integrity</h2>
+      <p style="font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.5;">
+        Before starting your interview, please complete a quick session identity check.
       </p>
     </div>
 
-    <!-- Monitoring Points -->
-    <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
-      <div class="disclaimer-point"><span class="disclaimer-icon">📷</span><span><strong style="color:#fff">Camera</strong> — Required for the interview session. Real-time MediaPipe face landmark detection active.</span></div>
-      <div class="disclaimer-point"><span class="disclaimer-icon">🎙️</span><span><strong style="color:#fff">Microphone</strong> — Required for your spoken responses to the AI interviewer.</span></div>
-      <div class="disclaimer-point"><span class="disclaimer-icon">👁️</span><span><strong style="color:#fff">Face Presence & Orientation</strong> — Observable signals like face absence, multiple faces, or prolonged off-camera turns are logged fairly.</span></div>
-      <div class="disclaimer-point"><span class="disclaimer-icon">🪟</span><span><strong style="color:#fff">Window Focus</strong> — Leaving the interview window is monitored. Prolonged absence (10+ sec) may end the session.</span></div>
-      <div class="disclaimer-point"><span class="disclaimer-icon">📊</span><span><strong style="color:#fff">Integrity Report</strong> — All observable events appear in your final Interview Analysis Report alongside performance scores.</span></div>
+    <!-- PRE-INTERVIEW IDENTITY CHECK PREVIEW BOX -->
+    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:18px; padding:16px; margin:12px 0; text-align:left;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-family:'Outfit',sans-serif; font-size:13.5px; font-weight:700; color:#fff;">📷 Identity Verification</span>
+        <button id="verify-identity-btn" style="padding:6px 14px; font-size:12px; font-weight:700; background:rgba(200,255,94,0.15); border:1px solid var(--lime); color:var(--lime); border-radius:10px; cursor:pointer; transition:all 0.2s;">
+          Verify Identity
+        </button>
+      </div>
+
+      <!-- Real-time Verification Checklist -->
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-bottom:12px;">
+        <div id="id-check-count" style="font-size:11px; font-weight:600; padding:8px 10px; background:rgba(0,0,0,0.3); border-radius:10px; color:var(--muted); border:1px solid rgba(255,255,255,0.06); text-align:center;">
+          ⚪ One face detected
+        </div>
+        <div id="id-check-visible" style="font-size:11px; font-weight:600; padding:8px 10px; background:rgba(0,0,0,0.3); border-radius:10px; color:var(--muted); border:1px solid rgba(255,255,255,0.06); text-align:center;">
+          ⚪ Face clearly visible
+        </div>
+        <div id="id-check-captured" style="font-size:11px; font-weight:600; padding:8px 10px; background:rgba(0,0,0,0.3); border-radius:10px; color:var(--muted); border:1px solid rgba(255,255,255,0.06); text-align:center;">
+          ⚪ Reference captured
+        </div>
+      </div>
+
+      <div id="id-verification-msg" style="padding:10px 14px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:12px; font-size:12.5px; color:#93c5fd; font-weight:600; text-align:center;">
+        Please look naturally toward the camera to verify your identity.
+      </div>
     </div>
 
-    <!-- Important Clarification -->
-    <div style="padding:14px 18px; background:rgba(200,255,94,0.05); border:1px solid rgba(200,255,94,0.2); border-radius:16px; font-size:12.5px; color:#b3ffaa; line-height:1.6; text-align:left;">
-      <strong style="color:var(--lime)">ℹ️ Important:</strong> This system monitors <em>observable technical signals only</em>. It does not claim to read intent or determine cheating from a single event. Events are classified as signals — not accusations.
+    <!-- Privacy Disclosure -->
+    <div style="padding:10px 14px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.08); border-radius:14px; font-size:11.5px; color:#9aa5be; line-height:1.5; text-align:left; margin-bottom:12px;">
+      🔒 <strong>Privacy Policy Notice:</strong> The camera is used to verify interview participation and maintain interview integrity. Identity-related processing is limited to the interview session according to the platform's privacy policy. No raw biometric images are stored permanently.
     </div>
 
     <button class="start-btn" id="start-interview-btn">Start Interview 🚀</button>
 
     <!-- Candidate name display -->
-    <p style="font-size:12px; color:var(--muted)">Session will be recorded for <strong id="consent-name" style="color:var(--text)">Candidate</strong></p>
+    <p style="font-size:12px; color:var(--muted); margin-top:6px;">Session will be recorded for <strong id="consent-name" style="color:var(--text)">Candidate</strong></p>
   </div>
 </div>
 
@@ -488,10 +506,44 @@ function handleStateChange(state) {
   const faceOverlay = document.getElementById('face-absent-overlay');
   const multiToast = document.getElementById('multiface-toast');
   const eyePill = document.getElementById('eye-contact-pill');
+  const idStatusTag = document.getElementById('dock-identity-status');
 
-  if (state.eyeContactPct !== undefined) {
-    currentEyeContactPct = state.eyeContactPct;
-    if (eyePill) eyePill.textContent = `👁️ Eye Contact ${state.eyeContactPct}%`;
+  if (state.eyeContactPct !== undefined && eyePill) {
+    eyePill.textContent = `👁️ Eye Contact ${state.eyeContactPct}%`;
+  }
+
+  if (idStatusTag && state.identityConsistencyPct !== undefined) {
+    idStatusTag.textContent = `• Identity Match ${state.identityConsistencyPct}%`;
+  }
+
+  // Pre-Interview Identity Check UI updates if modal is open
+  const chkCount = document.getElementById('id-check-count');
+  const chkVisible = document.getElementById('id-check-visible');
+  const chkCap = document.getElementById('id-check-captured');
+  const msgBox = document.getElementById('id-verification-msg');
+
+  if (chkCount && chkVisible) {
+    if (state.faceCount === 1) {
+      chkCount.textContent = '✓ One face detected';
+      chkCount.style.color = '#4ade80'; chkCount.style.borderColor = 'rgba(74,222,128,0.3)';
+    } else {
+      chkCount.textContent = state.faceCount === 0 ? '⚪ Face not detected' : '⚠️ Multiple faces';
+      chkCount.style.color = 'var(--muted)'; chkCount.style.borderColor = 'rgba(255,255,255,0.06)';
+    }
+
+    if (state.facePresent && state.lightingQuality !== 'POOR') {
+      chkVisible.textContent = '✓ Face clearly visible';
+      chkVisible.style.color = '#4ade80'; chkVisible.style.borderColor = 'rgba(74,222,128,0.3)';
+    }
+
+    if (state.identityVerified && chkCap && msgBox) {
+      chkCap.textContent = '✓ Identity reference captured';
+      chkCap.style.color = '#4ade80'; chkCap.style.borderColor = 'rgba(74,222,128,0.3)';
+      msgBox.textContent = 'Identity verified. You can start your interview.';
+      msgBox.style.background = 'rgba(74,222,128,0.12)';
+      msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
+      msgBox.style.color = '#86efac';
+    }
   }
 
   if (!pill || !pillText) return;
@@ -736,6 +788,7 @@ async function finishInterviewSession() {
 // ─── SAVE REPORT FOR ANALYSIS PAGE ───────────────────────────
 function _saveAnalyticsReport(apiReport = {}) {
   const cName  = localStorage.getItem('candidateName') || 'Candidate';
+  const visionState = FaceDetectionService.getState() || {};
   const report = AnalyticsService.buildReport({
     performanceMetrics: {
       overallScore: apiReport.overallScore || 84,
@@ -750,7 +803,7 @@ function _saveAnalyticsReport(apiReport = {}) {
       aiRecommendations: apiReport.suggestedResources || ['Study distributed systems design patterns', 'Practice STAR response methodology', 'Review high-concurrency database sharding'],
       questionAnalysis: questionAnalysisList
     },
-    integrityReport: IntegrityService.getReport(),
+    integrityReport: IntegrityService.getReport(visionState),
     sessionMeta: {
       candidateName: cName,
       targetRole: localStorage.getItem('targetRole') || 'Full Stack Developer',
@@ -787,7 +840,31 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('candidate-tag-name').textContent = `${cName} (You)`;
   document.getElementById('candidate-role-tag').textContent = `Candidate · ${role}`;
   const dockTag = document.getElementById('dock-round-tag');
-  if (dockTag) dockTag.textContent = `• ${round}`;
+  // Attach button click for Pre-Interview Identity Check button
+  const verifyBtn = document.getElementById('verify-identity-btn');
+  if (verifyBtn) {
+    verifyBtn.addEventListener('click', () => {
+      const res = FaceDetectionService.captureSessionReference();
+      const msgBox = document.getElementById('id-verification-msg');
+      if (res.success) {
+        if (msgBox) {
+          msgBox.textContent = 'Identity verified. You can start your interview.';
+          msgBox.style.background = 'rgba(74,222,128,0.12)';
+          msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
+          msgBox.style.color = '#86efac';
+        }
+      } else {
+        if (msgBox) {
+          msgBox.textContent = res.reason === 'EXACTLY_ONE_FACE_REQUIRED' 
+            ? '⚠️ Please ensure exactly one candidate face is visible.' 
+            : '⚠️ Please move closer to the camera and look straight ahead.';
+          msgBox.style.background = 'rgba(239,68,68,0.1)';
+          msgBox.style.borderColor = 'rgba(239,68,68,0.3)';
+          msgBox.style.color = '#fca5a5';
+        }
+      }
+    });
+  }
 
   // Start Interview Button
   document.getElementById('start-interview-btn').addEventListener('click', async () => {

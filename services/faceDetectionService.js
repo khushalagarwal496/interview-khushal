@@ -21,11 +21,21 @@ const FaceDetectionService = (() => {
   let isInitializing = false;
   let isRunning = false;
   
-  let runningEyeContact = 0;
+  // Identity Session Reference & Consistency State
+  let sessionReferenceDescriptor = null;
+  let identityVerified = false;
+  let latestLandmarks = null;
+  let recentSimilarityScores = [];
+  let mismatchStartTime = null;
+  let totalProcessedFrames = 0;
+  let totalFacePresentFrames = 0;
+  let runningIdentityConsistencyPct = 100;
+  let runningFacePresencePct = 100;
+  let currentSimilarityScore = 1.0;
 
   // State variables
   let currentState = {
-    status: 'FACE_NOT_DETECTED', // FACE_PRESENT | FACE_NOT_DETECTED | MULTIPLE_FACES | FACE_PARTIALLY_VISIBLE | LOW_CONFIDENCE
+    status: 'FACE_NOT_DETECTED', // FACE_PRESENT | FACE_NOT_DETECTED | MULTIPLE_FACES | FACE_PARTIALLY_VISIBLE | LOW_CONFIDENCE | IDENTITY_MISMATCH
     faceCount: 0,
     faceConfidence: 0,
     facePresent: false,
@@ -35,6 +45,11 @@ const FaceDetectionService = (() => {
     headRoll: 0,
     eyeContactPct: 0,
     lightingQuality: 'GOOD', // GOOD | LOW | POOR
+    identityVerified: false,
+    identitySimilarityScore: 1.0,
+    identityConsistencyPct: 100,
+    facePresencePct: 100,
+    identityStatus: 'UNCHECKED', // UNCHECKED | VERIFIED | MATCH | LOW_CONFIDENCE | MISMATCH
     timestamp: Date.now()
   };
 
@@ -269,7 +284,21 @@ const FaceDetectionService = (() => {
       } else {
         newStatus = 'FACE_PRESENT';
       }
+
+      // Live Identity Consistency Evaluation
+      if (candidateFace) {
+        latestLandmarks = candidateFace;
+        const identityEval = _evaluateIdentityConsistency(candidateFace, pose);
+        if (identityEval.isMismatch) {
+          newStatus = 'IDENTITY_MISMATCH';
+        }
+      }
     }
+
+    // Dynamic presence & consistency percentages
+    totalProcessedFrames++;
+    if (faceCount > 0) totalFacePresentFrames++;
+    runningFacePresencePct = Math.round((totalFacePresentFrames / Math.max(1, totalProcessedFrames)) * 100);
 
     // Calculate dynamic frame eye contact percentage from pose
     if (faceCount > 0) {
@@ -289,6 +318,13 @@ const FaceDetectionService = (() => {
       headRoll: pose.roll,
       eyeContactPct: runningEyeContact,
       lightingQuality: lighting.quality,
+      identityVerified,
+      identitySimilarityScore: currentSimilarityScore,
+      identityConsistencyPct: runningIdentityConsistencyPct,
+      facePresencePct: runningFacePresencePct,
+      identityStatus: identityVerified 
+        ? (newStatus === 'IDENTITY_MISMATCH' ? 'MISMATCH' : (currentSimilarityScore < PROCTORING_CONFIG.identitySimilarityThreshold ? 'LOW_CONFIDENCE' : 'MATCH'))
+        : 'UNCHECKED',
       timestamp: now
     };
 
@@ -558,9 +594,143 @@ const FaceDetectionService = (() => {
     console.log('[FaceDetectionService] Destroyed computer vision tracker.');
   }
 
+  /**
+   * Extracts scale-invariant & pose-normalized facial geometric distance ratios
+   */
+  function _extractLandmarkDescriptor(landmarks) {
+    if (!landmarks || landmarks.length < 468) return null;
+
+    const lm = landmarks;
+    const dist = (p1, p2) => Math.hypot(p1.x - p2.x, p1.y - p2.y, (p1.z || 0) - (p2.z || 0));
+
+    const leftEye = lm[33];
+    const rightEye = lm[263];
+    const nose = lm[1];
+    const chin = lm[152];
+    const mouthLeft = lm[61];
+    const mouthRight = lm[291];
+    const cheekLeft = lm[234];
+    const cheekRight = lm[454];
+    const forehead = lm[10];
+
+    const dEyes = Math.max(0.005, dist(leftEye, rightEye)); // Reference scale factor
+
+    return [
+      dist(nose, chin) / dEyes,
+      dist(leftEye, mouthLeft) / dEyes,
+      dist(rightEye, mouthRight) / dEyes,
+      dist(nose, mouthLeft) / dEyes,
+      dist(nose, mouthRight) / dEyes,
+      dist(cheekLeft, cheekRight) / dEyes,
+      dist(leftEye, nose) / dEyes,
+      dist(rightEye, nose) / dEyes,
+      dist(forehead, nose) / dEyes,
+      dist(mouthLeft, mouthRight) / dEyes,
+      dist(forehead, chin) / dEyes
+    ];
+  }
+
+  function _cosineSimilarity(vecA, vecB) {
+    if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
+    let dot = 0, normA = 0, normB = 0;
+    for (let i = 0; i < vecA.length; i++) {
+      dot += vecA[i] * vecB[i];
+      normA += vecA[i] * vecA[i];
+      normB += vecB[i] * vecB[i];
+    }
+    if (normA === 0 || normB === 0) return 0;
+    return Math.max(0, Math.min(1, dot / (Math.sqrt(normA) * Math.sqrt(normB))));
+  }
+
+  /**
+   * Captures temporary pre-interview session reference descriptor
+   */
+  function captureSessionReference() {
+    if (!currentState.facePresent || currentState.faceCount !== 1) {
+      return { success: false, reason: 'EXACTLY_ONE_FACE_REQUIRED' };
+    }
+    if (currentState.facePosition.width < 0.10 || currentState.facePosition.height < 0.10) {
+      return { success: false, reason: 'FACE_TOO_FAR' };
+    }
+
+    if (latestLandmarks) {
+      const descriptor = _extractLandmarkDescriptor(latestLandmarks);
+      if (descriptor) {
+        sessionReferenceDescriptor = descriptor;
+        identityVerified = true;
+        currentState.identityVerified = true;
+        currentState.identityStatus = 'VERIFIED';
+        IntegrityService.logEvent('IDENTITY_REFERENCE_CREATED', {
+          quality: currentState.lightingQuality,
+          descriptorLength: descriptor.length
+        });
+        return {
+          success: true,
+          quality: currentState.lightingQuality,
+          checks: { countOne: true, faceVisible: true, referenceCaptured: true }
+        };
+      }
+    }
+    return { success: false, reason: 'DESCRIPTOR_EXTRACTION_FAILED' };
+  }
+
+  /**
+   * Evaluates live candidate facial consistency against session reference with temporal smoothing
+   */
+  function _evaluateIdentityConsistency(candidateFace, pose) {
+    if (!sessionReferenceDescriptor || !identityVerified) {
+      return { isMismatch: false, similarity: 1.0 };
+    }
+
+    const liveDescriptor = _extractLandmarkDescriptor(candidateFace);
+    if (!liveDescriptor) return { isMismatch: false, similarity: 1.0 };
+
+    const rawSimilarity = _cosineSimilarity(liveDescriptor, sessionReferenceDescriptor);
+    
+    // Maintain sliding window array for temporal smoothing
+    recentSimilarityScores.push(rawSimilarity);
+    if (recentSimilarityScores.length > PROCTORING_CONFIG.identityTemporalWindowSize) {
+      recentSimilarityScores.shift();
+    }
+
+    const avgSimilarity = recentSimilarityScores.reduce((a, b) => a + b, 0) / recentSimilarityScores.length;
+    currentSimilarityScore = Math.round(avgSimilarity * 100) / 100;
+
+    // Exponential moving average for session consistency score %
+    const frameMatchPct = Math.round(avgSimilarity * 100);
+    runningIdentityConsistencyPct = Math.round(runningIdentityConsistencyPct * 0.98 + frameMatchPct * 0.02);
+
+    const now = Date.now();
+    let isMismatch = false;
+
+    if (avgSimilarity < PROCTORING_CONFIG.identitySimilarityThreshold) {
+      if (!mismatchStartTime) mismatchStartTime = now;
+      const durationMs = now - mismatchStartTime;
+
+      if (durationMs >= PROCTORING_CONFIG.identityConcernDurationMs) {
+        isMismatch = true;
+        _triggerEventWithCooldown('IDENTITY_CONSISTENCY_CONCERN', {
+          similarity: currentSimilarityScore,
+          durationMs
+        });
+      } else if (durationMs >= PROCTORING_CONFIG.identityMismatchGraceMs) {
+        isMismatch = true;
+        _triggerEventWithCooldown('IDENTITY_LOW_CONFIDENCE', {
+          similarity: currentSimilarityScore,
+          durationMs
+        });
+      }
+    } else {
+      mismatchStartTime = null;
+    }
+
+    return { isMismatch, similarity: currentSimilarityScore };
+  }
+
   return {
     init,
     destroy,
+    captureSessionReference,
     getState: () => ({ ...currentState }),
   };
 })();

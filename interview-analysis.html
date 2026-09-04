@@ -595,6 +595,35 @@ header {
     </div>
   </div>
 
+  <!-- ══════════════ IDENTITY & INTERVIEW INTEGRITY ══════════════ -->
+  <div class="section">
+    <div class="section-label">Identity & Interview Integrity</div>
+    <div class="card">
+      <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:12px; text-align:center;">
+        <div class="int-stat" style="background:rgba(255,255,255,0.02); padding:14px; border-radius:14px; border:1px solid var(--line);">
+          <div class="int-stat-val" id="id-verif-val" style="color:var(--lime); font-size:20px;">Not available</div>
+          <div class="int-stat-lbl">Identity Verification</div>
+        </div>
+        <div class="int-stat" style="background:rgba(255,255,255,0.02); padding:14px; border-radius:14px; border:1px solid var(--line);">
+          <div class="int-stat-val" id="id-consist-val" style="color:#93c5fd; font-size:20px;">Not available</div>
+          <div class="int-stat-lbl">Identity Consistency</div>
+        </div>
+        <div class="int-stat" style="background:rgba(255,255,255,0.02); padding:14px; border-radius:14px; border:1px solid var(--line);">
+          <div class="int-stat-val" id="id-presence-val" style="color:#c084fc; font-size:20px;">Not available</div>
+          <div class="int-stat-lbl">Face Presence</div>
+        </div>
+        <div class="int-stat" style="background:rgba(255,255,255,0.02); padding:14px; border-radius:14px; border:1px solid var(--line);">
+          <div class="int-stat-val" id="id-multi-val" style="color:#fde047; font-size:20px;">0</div>
+          <div class="int-stat-lbl">Multiple Face Events</div>
+        </div>
+        <div class="int-stat" style="background:rgba(255,255,255,0.02); padding:14px; border-radius:14px; border:1px solid var(--line);">
+          <div class="int-stat-val" id="id-concern-val" style="color:#f87171; font-size:20px;">0</div>
+          <div class="int-stat-lbl">Identity Concerns</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════ INTERVIEW INTEGRITY ANALYSIS ══════════════ -->
   <div class="section">
     <div class="section-label">Interview Integrity Analysis</div>
@@ -812,6 +841,27 @@ header {
   setText('int-multi-count', intRep.multifaceCount ?? 0);
   setText('int-head-count', intRep.headOrientationCount ?? 0);
   setText('int-away-sec', `${intRep.totalTimeAwaySeconds ?? 0}s`);
+
+  // Identity & Interview Integrity Section Population
+  const idVerified = intRep.identityVerified;
+  const idConsist = intRep.identityConsistencyPct;
+  const facePresence = intRep.facePresencePct;
+
+  const idVerifEl = document.getElementById('id-verif-val');
+  if (idVerifEl) {
+    if (idVerified) {
+      idVerifEl.textContent = '✓ Verified';
+      idVerifEl.style.color = 'var(--lime)';
+    } else {
+      idVerifEl.textContent = 'Not available';
+      idVerifEl.style.color = 'var(--muted)';
+    }
+  }
+
+  setText('id-consist-val', (idConsist !== null && idConsist !== undefined) ? `${idConsist}%` : 'Not available');
+  setText('id-presence-val', (facePresence !== null && facePresence !== undefined) ? `${facePresence}%` : 'Not available');
+  setText('id-multi-val', intRep.multifaceCount ?? 0);
+  setText('id-concern-val', intRep.identityConcernCount ?? 0);
 
   // Checklist updates
   if (intRep.faceAbsentCount > 0) setHTML('chk-face', `<span class="check-icon warn">⚠️</span> Candidate face: ${intRep.faceAbsentCount} brief absence event(s) logged`);

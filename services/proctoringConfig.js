@@ -25,11 +25,19 @@ export const PROCTORING_CONFIG = {
   // Tab Focus & Window Visibility
   tabAbsenceCountdownSeconds: 10,      // 10s return window before auto-termination
   
+  // Identity Verification & Live Session Consistency
+  identitySimilarityThreshold: 0.68,   // Minimum cosine similarity for landmark descriptors
+  identityTemporalWindowSize: 15,     // 15-frame sliding window for temporal smoothing
+  identityMismatchGraceMs: 3000,       // 3s grace period before soft identity warning
+  identityConcernDurationMs: 6000,     // 6s persistent mismatch before logging IDENTITY_CONSISTENCY_CONCERN
+  
   // Integrity Score Deductions
   deductions: {
     FACE_NOT_DETECTED: 3,
     MULTIPLE_FACES_DETECTED: 8,
     HEAD_ORIENTATION_CONCERN: 4,
+    IDENTITY_CONSISTENCY_CONCERN: 10,
+    IDENTITY_LOW_CONFIDENCE: 2,
     WINDOW_FOCUS_LOST: 5,
     FULLSCREEN_EXIT: 3,
     LOW_LIGHTING_WARNING: 1,

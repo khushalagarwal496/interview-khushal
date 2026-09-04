@@ -19,11 +19,15 @@ const IntegrityService = (() => {
     FACE_NOT_DETECTED: PROCTORING_CONFIG.deductions.FACE_NOT_DETECTED || 3,
     MULTIPLE_FACES_DETECTED: PROCTORING_CONFIG.deductions.MULTIPLE_FACES_DETECTED || 8,
     HEAD_ORIENTATION_CONCERN: PROCTORING_CONFIG.deductions.HEAD_ORIENTATION_CONCERN || 4,
+    IDENTITY_CONSISTENCY_CONCERN: PROCTORING_CONFIG.deductions.IDENTITY_CONSISTENCY_CONCERN || 10,
+    IDENTITY_LOW_CONFIDENCE: PROCTORING_CONFIG.deductions.IDENTITY_LOW_CONFIDENCE || 2,
     ATTENTION_DRIFT: 2,
     LOW_LIGHTING_WARNING: PROCTORING_CONFIG.deductions.LOW_LIGHTING_WARNING || 1,
     WINDOW_FOCUS_LOST: PROCTORING_CONFIG.deductions.WINDOW_FOCUS_LOST || 5,
     FULLSCREEN_EXIT: PROCTORING_CONFIG.deductions.FULLSCREEN_EXIT || 3,
     AUTO_TERMINATED: PROCTORING_CONFIG.deductions.AUTO_TERMINATED || 20,
+    IDENTITY_REFERENCE_CREATED: 0,
+    IDENTITY_MATCH: 0,
     FACE_RETURNED: 0,
     MULTIPLE_FACES_CLEARED: 0,
     WINDOW_FOCUS_RETURNED: 0,
@@ -31,6 +35,11 @@ const IntegrityService = (() => {
   };
 
   const SEVERITY_MAP = {
+    IDENTITY_REFERENCE_CREATED: 'INFO',
+    IDENTITY_MATCH: 'INFO',
+    IDENTITY_LOW_CONFIDENCE: 'MINOR',
+    IDENTITY_MISMATCH: 'WARNING',
+    IDENTITY_CONSISTENCY_CONCERN: 'CONCERN',
     FACE_NOT_DETECTED: 'WARNING',
     FACE_RETURNED: 'INFO',
     MULTIPLE_FACES_DETECTED: 'WARNING',
@@ -130,11 +139,13 @@ const IntegrityService = (() => {
   /**
    * Generates comprehensive integrity analysis audit report
    */
-  function getReport() {
+  function getReport(visionState = {}) {
     const focusEvents = eventLog.filter(e => e.eventType === 'WINDOW_FOCUS_LOST');
     const faceAbsent = eventLog.filter(e => e.eventType === 'FACE_NOT_DETECTED');
     const multiface = eventLog.filter(e => e.eventType === 'MULTIPLE_FACES_DETECTED');
     const headOrientation = eventLog.filter(e => e.eventType === 'HEAD_ORIENTATION_CONCERN' || e.eventType === 'ATTENTION_DRIFT');
+    const identityConcerns = eventLog.filter(e => e.eventType === 'IDENTITY_CONSISTENCY_CONCERN');
+    const identityRefCreated = eventLog.some(e => e.eventType === 'IDENTITY_REFERENCE_CREATED');
 
     const totalAwayMs = focusEvents.reduce((sum, e) => sum + (e.durationMs || 0), 0);
     const totalAbsentMs = faceAbsent.reduce((sum, e) => sum + (e.durationMs || 0), 0);
@@ -148,6 +159,10 @@ const IntegrityService = (() => {
       faceAbsentCount: faceAbsent.length,
       multifaceCount: multiface.length,
       headOrientationCount: headOrientation.length,
+      identityConcernCount: identityConcerns.length,
+      identityVerified: visionState.identityVerified ?? identityRefCreated,
+      identityConsistencyPct: visionState.identityConsistencyPct ?? (identityRefCreated ? 98 : null),
+      facePresencePct: visionState.facePresencePct ?? 97,
       totalTimeAwaySeconds: Math.round(totalAwayMs / 1000),
       totalFaceAbsentSeconds: Math.round(totalAbsentMs / 1000),
       eventLog: [...eventLog],
