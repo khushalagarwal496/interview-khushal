@@ -163,6 +163,7 @@ const IntegrityService = (() => {
       identityVerified: visionState.identityVerified ?? identityRefCreated,
       identityConsistencyPct: visionState.identityConsistencyPct ?? (identityRefCreated ? 98 : null),
       facePresencePct: visionState.facePresencePct ?? 97,
+      candidatePhotoDataUrl: visionState.candidatePhotoDataUrl || null,
       totalTimeAwaySeconds: Math.round(totalAwayMs / 1000),
       totalFaceAbsentSeconds: Math.round(totalAbsentMs / 1000),
       eventLog: [...eventLog],

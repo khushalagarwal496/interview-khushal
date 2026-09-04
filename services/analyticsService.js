@@ -49,6 +49,7 @@ const AnalyticsService = (() => {
         identityVerified: integrityReport.identityVerified ?? false,
         identityConsistencyPct: integrityReport.identityConsistencyPct ?? null,
         facePresencePct: integrityReport.facePresencePct ?? null,
+        candidatePhotoDataUrl: integrityReport.candidatePhotoDataUrl || null,
         totalTimeAwaySeconds: integrityReport.totalTimeAwaySeconds ?? 0,
         totalFaceAbsentSeconds: integrityReport.totalFaceAbsentSeconds ?? 0,
         totalEvents: integrityReport.totalEvents ?? 0,

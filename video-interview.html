@@ -259,6 +259,15 @@ header {
         </button>
       </div>
 
+      <!-- Live Modal Video & Captured Snapshot Preview Container -->
+      <div style="position:relative; width:100%; height:160px; background:#080b16; border-radius:14px; overflow:hidden; border:1px solid rgba(200,255,94,0.3); margin-bottom:12px;">
+        <video id="modal-webcam-feed" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:block;"></video>
+        <img id="modal-snapshot-preview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:none; border:2px solid var(--lime);" alt="Verified Candidate Snapshot"/>
+        <div id="modal-snapshot-badge" style="display:none; position:absolute; bottom:8px; left:8px; padding:4px 10px; background:rgba(8,11,22,0.85); border:1px solid var(--lime); color:var(--lime); font-weight:700; font-size:11px; border-radius:8px; backdrop-filter:blur(8px);">
+          ✓ Verified Candidate Snapshot
+        </div>
+      </div>
+
       <!-- Real-time Verification Checklist -->
       <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-bottom:12px;">
         <div id="id-check-count" style="font-size:11px; font-weight:600; padding:8px 10px; background:rgba(0,0,0,0.3); border-radius:10px; color:var(--muted); border:1px solid rgba(255,255,255,0.06); text-align:center;">
@@ -839,14 +848,47 @@ window.addEventListener('DOMContentLoaded', () => {
   const round = localStorage.getItem('interviewType') || 'Technical';
   document.getElementById('candidate-tag-name').textContent = `${cName} (You)`;
   document.getElementById('candidate-role-tag').textContent = `Candidate · ${role}`;
-  const dockTag = document.getElementById('dock-round-tag');
+  // Pre-interview live camera stream setup for modal preview
+  const modalVid = document.getElementById('modal-webcam-feed');
+  const mainVid = document.getElementById('webcam-feed');
+  const canvasOverlay = document.getElementById('landmark-canvas');
+
+  navigator.mediaDevices?.getUserMedia({ video: true, audio: true }).then(async stream => {
+    mediaStream = stream;
+    if (modalVid) {
+      modalVid.srcObject = stream;
+      try { await modalVid.play(); } catch(e){}
+    }
+    if (mainVid) {
+      mainVid.srcObject = stream;
+    }
+    // Initialize FaceDetectionService early for pre-interview modal check
+    try {
+      await FaceDetectionService.init(modalVid || mainVid, canvasOverlay, {
+        onStateChange: handleStateChange,
+        onWarning: (evt) => showBannerMsg(`⚠️ Integrity Event: ${evt.replace(/_/g, ' ')}`, false)
+      });
+    } catch(e) { console.warn('Early vision init warning:', e); }
+  }).catch(err => {
+    console.warn('Pre-interview camera access warning:', err);
+  });
+
   // Attach button click for Pre-Interview Identity Check button
   const verifyBtn = document.getElementById('verify-identity-btn');
   if (verifyBtn) {
     verifyBtn.addEventListener('click', () => {
-      const res = FaceDetectionService.captureSessionReference();
+      const activeVid = modalVid || mainVid;
+      const res = FaceDetectionService.captureSessionReference(activeVid);
       const msgBox = document.getElementById('id-verification-msg');
+      const snapImg = document.getElementById('modal-snapshot-preview');
+      const snapBadge = document.getElementById('modal-snapshot-badge');
+
       if (res.success) {
+        if (res.photoDataUrl && snapImg) {
+          snapImg.src = res.photoDataUrl;
+          snapImg.style.display = 'block';
+          if (snapBadge) snapBadge.style.display = 'block';
+        }
         if (msgBox) {
           msgBox.textContent = 'Identity verified. You can start your interview.';
           msgBox.style.background = 'rgba(74,222,128,0.12)';

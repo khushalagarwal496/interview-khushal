@@ -642,14 +642,17 @@ const FaceDetectionService = (() => {
     return Math.max(0, Math.min(1, dot / (Math.sqrt(normA) * Math.sqrt(normB))));
   }
 
+  let candidatePhotoDataUrl = null;
+
   /**
-   * Captures temporary pre-interview session reference descriptor
+   * Captures temporary pre-interview session reference descriptor & photo snapshot
    */
-  function captureSessionReference() {
+  function captureSessionReference(vEl) {
+    const targetVid = vEl || videoEl;
     if (!currentState.facePresent || currentState.faceCount !== 1) {
       return { success: false, reason: 'EXACTLY_ONE_FACE_REQUIRED' };
     }
-    if (currentState.facePosition.width < 0.10 || currentState.facePosition.height < 0.10) {
+    if (currentState.facePosition.width < 0.08 || currentState.facePosition.height < 0.08) {
       return { success: false, reason: 'FACE_TOO_FAR' };
     }
 
@@ -660,6 +663,21 @@ const FaceDetectionService = (() => {
         identityVerified = true;
         currentState.identityVerified = true;
         currentState.identityStatus = 'VERIFIED';
+
+        if (targetVid && targetVid.videoWidth) {
+          try {
+            const snapCanvas = document.createElement('canvas');
+            snapCanvas.width = 320;
+            snapCanvas.height = 240;
+            const snapCtx = snapCanvas.getContext('2d');
+            snapCtx.drawImage(targetVid, 0, 0, 320, 240);
+            candidatePhotoDataUrl = snapCanvas.toDataURL('image/jpeg', 0.85);
+            currentState.candidatePhotoDataUrl = candidatePhotoDataUrl;
+          } catch(e) {
+            console.warn('Snapshot capture warning:', e);
+          }
+        }
+
         IntegrityService.logEvent('IDENTITY_REFERENCE_CREATED', {
           quality: currentState.lightingQuality,
           descriptorLength: descriptor.length
@@ -667,6 +685,7 @@ const FaceDetectionService = (() => {
         return {
           success: true,
           quality: currentState.lightingQuality,
+          photoDataUrl: candidatePhotoDataUrl,
           checks: { countOne: true, faceVisible: true, referenceCaptured: true }
         };
       }
