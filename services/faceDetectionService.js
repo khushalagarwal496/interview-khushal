@@ -59,7 +59,9 @@ const FaceDetectionService = (() => {
   let headTurnStartTime = null;
   let lowLightingStartTime = null;
   let lastEventLogTime = {};
+  let runningEyeContact = 100; // ← was missing! caused ReferenceError in strict ES module mode
   
+
   // Event callbacks
   let onStateChangeCallback = null;
   let onWarningCallback = null;
@@ -103,21 +105,32 @@ const FaceDetectionService = (() => {
   }
 
   /**
-   * Dynamically loads MediaPipe scripts if not present on page
+   * Verifies MediaPipe FaceMesh is available (loaded via <head> script tag)
+   * Falls back to dynamic load if not yet present.
    */
   function _loadMediaPipeScripts() {
     return new Promise((resolve, reject) => {
+      // Already loaded via <head> script tag — resolve immediately
       if (window.FaceMesh) return resolve();
 
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
-      script.crossOrigin = 'anonymous';
-      script.onload = () => {
-        if (window.FaceMesh) resolve();
-        else reject(new Error('FaceMesh object not found after script load'));
-      };
-      script.onerror = () => reject(new Error('Failed to load FaceMesh script from CDN'));
-      document.head.appendChild(script);
+      // Give the <head> script up to 5s to finish loading
+      let attempts = 0;
+      const check = setInterval(() => {
+        attempts++;
+        if (window.FaceMesh) {
+          clearInterval(check);
+          resolve();
+        } else if (attempts > 50) {
+          clearInterval(check);
+          // Last resort: dynamic load with pinned version
+          const script = document.createElement('script');
+          const base = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619';
+          script.src = `${base}/face_mesh.js`;
+          script.onload = () => window.FaceMesh ? resolve() : reject(new Error('FaceMesh not found after dynamic load'));
+          script.onerror = () => reject(new Error('MediaPipe CDN unreachable'));
+          document.head.appendChild(script);
+        }
+      }, 100);
     });
   }
 
@@ -127,8 +140,9 @@ const FaceDetectionService = (() => {
   function _initFaceMesh() {
     return new Promise((resolve, reject) => {
       try {
+        const base = window._mediapipeBase || 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619';
         faceMesh = new window.FaceMesh({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+          locateFile: (file) => `${base}/${file}`
         });
 
         faceMesh.setOptions({
