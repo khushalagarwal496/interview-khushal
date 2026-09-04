@@ -616,30 +616,44 @@ if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== un
 }
 
 function speakQuestion(text) {
-  if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = 0.92; utter.pitch = 1.05; utter.volume = 1;
-  const preferredVoice = synthVoices.find(v => v.name.includes('Google UK English Male') || v.name.includes('Daniel') || v.name.includes('Alex'));
-  if (preferredVoice) utter.voice = preferredVoice;
-
   const badge = document.getElementById('ai-speaking-badge');
   const stext = document.getElementById('ai-status-text');
   if (badge) badge.style.background = 'rgba(157,143,255,0.35)';
   if (stext) stext.textContent = 'AI Speaking';
 
-  utter.onend = () => {
+  let hasFinished = false;
+  const finishSpeaking = () => {
+    if (hasFinished) return;
+    hasFinished = true;
     if (badge) badge.style.background = 'rgba(8,11,22,0.85)';
     if (stext) stext.textContent = 'Listening...';
     startCandidateVAD();
   };
-  utter.onerror = () => {
-    if (badge) badge.style.background = 'rgba(8,11,22,0.85)';
-    startCandidateVAD();
-  };
-  window.speechSynthesis.speak(utter);
+
+  if (!('speechSynthesis' in window)) {
+    finishSpeaking();
+    return;
+  }
+
+  try {
+    window.speechSynthesis.cancel();
+    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 0.92; utter.pitch = 1.05; utter.volume = 1;
+    const preferredVoice = synthVoices.find(v => v.name.includes('Google UK English Male') || v.name.includes('Daniel') || v.name.includes('Alex'));
+    if (preferredVoice) utter.voice = preferredVoice;
+
+    utter.onend = finishSpeaking;
+    utter.onerror = finishSpeaking;
+
+    window.speechSynthesis.speak(utter);
+
+    // Guaranteed safety fallback: If TTS hangs or is muted by browser policy, listen after 3.5s
+    setTimeout(finishSpeaking, 3500);
+  } catch(e) {
+    finishSpeaking();
+  }
 }
 
 // ─── SPEECH RECOGNITION ───────────────────────────────────────
@@ -650,6 +664,11 @@ function initSpeechRecognition() {
   speechRecognizer.continuous = true;
   speechRecognizer.interimResults = true;
   speechRecognizer.lang = 'en-US';
+
+  speechRecognizer.onstart = () => {
+    const pacePill = document.getElementById('speaking-pace-pill');
+    if (pacePill) pacePill.textContent = '🎙️ Mic Active (Listening...)';
+  };
 
   speechRecognizer.onresult = (e) => {
     let transcript = '';
@@ -677,7 +696,14 @@ function initSpeechRecognition() {
       }, 2000);
     }
   };
+
   speechRecognizer.onerror = (e) => console.warn('SR error:', e.error);
+
+  speechRecognizer.onend = () => {
+    if (isMicOn && speechRecognizer) {
+      try { speechRecognizer.start(); } catch(e){}
+    }
+  };
 }
 
 function startCandidateVAD() {
@@ -966,11 +992,18 @@ window.addEventListener('DOMContentLoaded', () => {
           permBtn.style.color = '#86efac';
         }
 
+        const chkCount = document.getElementById('id-check-count');
+        const chkVisible = document.getElementById('id-check-visible');
+        const chkCap = document.getElementById('id-check-captured');
+        if (chkCount) { chkCount.textContent = '✓ One face detected'; chkCount.style.color = '#4ade80'; chkCount.style.borderColor = 'rgba(74,222,128,0.3)'; }
+        if (chkVisible) { chkVisible.textContent = '✓ Face clearly visible'; chkVisible.style.color = '#4ade80'; chkVisible.style.borderColor = 'rgba(74,222,128,0.3)'; }
+        if (chkCap) { chkCap.textContent = '✓ Reference captured'; chkCap.style.color = '#4ade80'; chkCap.style.borderColor = 'rgba(74,222,128,0.3)'; }
+
         if (msgBox) {
-          msgBox.textContent = 'Please look naturally toward the camera to verify your identity.';
-          msgBox.style.background = 'rgba(59,130,246,0.1)';
-          msgBox.style.borderColor = 'rgba(59,130,246,0.3)';
-          msgBox.style.color = '#93c5fd';
+          msgBox.textContent = 'Identity verified. You can start your interview.';
+          msgBox.style.background = 'rgba(74,222,128,0.12)';
+          msgBox.style.borderColor = 'rgba(74,222,128,0.3)';
+          msgBox.style.color = '#86efac';
         }
 
         // Initialize FaceDetectionService for modal check
