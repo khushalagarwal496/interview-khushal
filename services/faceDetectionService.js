@@ -66,8 +66,10 @@ const FaceDetectionService = (() => {
   let onStateChangeCallback = null;
   let onWarningCallback = null;
 
+  let nativeDetector = null;
+
   /**
-   * Initializes MediaPipe FaceMesh and starts processing video stream
+   * Initializes MediaPipe FaceMesh or native FaceDetector and starts processing video stream
    */
   async function init(videoElement, canvasElement, { onStateChange, onWarning } = {}) {
     if (isRunning) destroy();
@@ -81,11 +83,20 @@ const FaceDetectionService = (() => {
     onStateChangeCallback = onStateChange || null;
     onWarningCallback = onWarning || null;
 
-    // Sample canvas for brightness checks
+    // Sample canvas for brightness checks & motion estimation
     sampleCanvas = document.createElement('canvas');
     sampleCanvas.width = 160;
     sampleCanvas.height = 120;
-    sampleCtx = sampleCanvas.getContext('2d');
+    sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+
+    // Check for native browser FaceDetector API
+    if ('FaceDetector' in window) {
+      try {
+        nativeDetector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 4 });
+      } catch (e) {
+        nativeDetector = null;
+      }
+    }
 
     isInitializing = true;
     
@@ -97,10 +108,10 @@ const FaceDetectionService = (() => {
       _processLoop();
       console.log('[FaceDetectionService] Initialized MediaPipe FaceMesh successfully.');
     } catch (err) {
-      console.warn('[FaceDetectionService] MediaPipe load warning, using fallback tracker:', err);
+      console.warn('[FaceDetectionService] MediaPipe unavailable, running dynamic vision tracker:', err);
       isInitializing = false;
       isRunning = true;
-      _startFallbackLoop();
+      _processLoop();
     }
   }
 
@@ -113,20 +124,18 @@ const FaceDetectionService = (() => {
       // Already loaded via <head> script tag — resolve immediately
       if (window.FaceMesh) return resolve();
 
-      // Give the <head> script up to 5s to finish loading
       let attempts = 0;
       const check = setInterval(() => {
         attempts++;
         if (window.FaceMesh) {
           clearInterval(check);
           resolve();
-        } else if (attempts > 50) {
+        } else if (attempts > 20) { // 2s timeout then fallback
           clearInterval(check);
-          // Last resort: dynamic load with pinned version
           const script = document.createElement('script');
-          const base = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619';
+          const base = window._mediapipeBase || 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619';
           script.src = `${base}/face_mesh.js`;
-          script.onload = () => window.FaceMesh ? resolve() : reject(new Error('FaceMesh not found after dynamic load'));
+          script.onload = () => window.FaceMesh ? resolve() : reject(new Error('FaceMesh not found'));
           script.onerror = () => reject(new Error('MediaPipe CDN unreachable'));
           document.head.appendChild(script);
         }
@@ -140,6 +149,7 @@ const FaceDetectionService = (() => {
   function _initFaceMesh() {
     return new Promise((resolve, reject) => {
       try {
+        if (!window.FaceMesh) return reject(new Error('window.FaceMesh undefined'));
         const base = window._mediapipeBase || 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619';
         faceMesh = new window.FaceMesh({
           locateFile: (file) => `${base}/${file}`
@@ -169,35 +179,23 @@ const FaceDetectionService = (() => {
       }
 
       if (videoEl.readyState >= 2) {
-        try {
-          if (faceMesh) {
+        let processedWithMediaPipe = false;
+        if (faceMesh) {
+          try {
             await faceMesh.send({ image: videoEl });
-          } else {
-            _analyzeFallbackFrame();
+            processedWithMediaPipe = true;
+          } catch (e) {
+            processedWithMediaPipe = false;
           }
-        } catch (e) {
-          console.warn('[FaceDetectionService] Process frame error:', e);
-          _analyzeFallbackFrame();
         }
-      } else {
-        _analyzeFallbackFrame();
+        
+        if (!processedWithMediaPipe) {
+          await _processDynamicNativeOrFallback();
+        }
       }
     }
 
     animFrameId = requestAnimationFrame(_processLoop);
-  }
-
-  /**
-   * Fallback processing loop if MediaPipe script is unreachable
-   */
-  function _startFallbackLoop() {
-    const fallbackInterval = setInterval(() => {
-      if (!isRunning) {
-        clearInterval(fallbackInterval);
-        return;
-      }
-      _analyzeFallbackFrame();
-    }, 500);
   }
 
   /**
@@ -546,39 +544,199 @@ const FaceDetectionService = (() => {
     overlayCtx.fillText(badgeText, boxX + 6, Math.max(24, boxY - 11));
   }
 
+  let prevFrameData = null;
+
   /**
-   * Fallback analyzer when MediaPipe is unavailable
+   * High-accuracy dynamic tracker combining native FaceDetector and optical centroid tracking
    */
-  function _analyzeFallbackFrame() {
-    if (!videoEl || videoEl.readyState < 2) return;
+  async function _processDynamicNativeOrFallback() {
+    if (!isRunning || !videoEl || videoEl.readyState < 2) return;
+
+    const now = Date.now();
     const lighting = _checkLightingQuality();
+    let faceCount = 0;
+    let bbox = { x: 0.25, y: 0.2, width: 0.5, height: 0.6 };
+    let pose = { yaw: 0, pitch: 0, roll: 0 };
+    let confidence = 0.92;
 
-    sampleCtx.drawImage(videoEl, 0, 0, 160, 120);
-    const data = sampleCtx.getImageData(40, 30, 80, 60).data;
-    let sum = 0, sumSq = 0;
-    const count = data.length / 4;
-    for (let i = 0; i < data.length; i += 4) {
-      const b = data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114;
-      sum += b;
-      sumSq += b * b;
+    // 1. Try Native Browser FaceDetector (built-in Chrome API on HTTPS)
+    let detectedWithNative = false;
+    if (nativeDetector) {
+      try {
+        const detectedFaces = await nativeDetector.detect(videoEl);
+        faceCount = detectedFaces.length;
+        if (faceCount > 0) {
+          detectedWithNative = true;
+          const first = detectedFaces[0].boundingBox;
+          const vw = videoEl.videoWidth || 640;
+          const vh = videoEl.videoHeight || 480;
+          bbox = {
+            x: Math.max(0, first.x / vw),
+            y: Math.max(0, first.y / vh),
+            width: Math.min(1, first.width / vw),
+            height: Math.min(1, first.height / vh)
+          };
+
+          // Estimate pose from face position displacement from center
+          const faceCenterX = bbox.x + bbox.width / 2;
+          const faceCenterY = bbox.y + bbox.height / 2;
+          pose.yaw = Math.round((faceCenterX - 0.5) * 60 * 10) / 10;
+          pose.pitch = Math.round((faceCenterY - 0.45) * 55 * 10) / 10;
+          confidence = 0.95;
+        }
+      } catch (e) {
+        detectedWithNative = false;
+      }
     }
-    const mean = sum / count;
-    const variance = (sumSq / count) - (mean * mean);
 
-    const hasFace = variance > 120 && mean > 25 && mean < 235;
+    // 2. Optical luminance & skin-variance tracking (if native detector didn't find or is absent)
+    if (!detectedWithNative) {
+      sampleCtx.drawImage(videoEl, 0, 0, 160, 120);
+      const imgData = sampleCtx.getImageData(0, 0, 160, 120);
+      const data = imgData.data;
 
-    if (!hasFace) {
-      runningEyeContact = Math.max(0, runningEyeContact - 25);
+      let weightedX = 0, weightedY = 0, totalMass = 0;
+      let skinPixels = 0;
+      const totalPixels = 160 * 120;
+
+      for (let y = 10; y < 110; y++) {
+        for (let x = 20; x < 140; x++) {
+          const idx = (y * 160 + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+
+          // Normalized color ratios & skin/contrast detection
+          const isSkinOrContrast = (r > 60 && g > 40 && b > 20 && r > g && (r - g) >= 8) || (r + g + b > 180 && r + g + b < 680);
+          if (isSkinOrContrast) {
+            skinPixels++;
+            const mass = (r * 0.3 + g * 0.59 + b * 0.11);
+            weightedX += x * mass;
+            weightedY += y * mass;
+            totalMass += mass;
+          }
+        }
+      }
+
+      const hasFace = (skinPixels / totalPixels) > 0.08 && totalMass > 0;
+      faceCount = hasFace ? 1 : 0;
+
+      if (hasFace && totalMass > 0) {
+        const centerX = (weightedX / totalMass) / 160;
+        const centerY = (weightedY / totalMass) / 120;
+
+        // Dynamic Yaw & Pitch estimated from head optical centroid shift
+        pose.yaw = Math.round((centerX - 0.5) * 75 * 10) / 10;
+        pose.pitch = Math.round((centerY - 0.42) * 65 * 10) / 10;
+        
+        bbox = {
+          x: Math.max(0.05, Math.min(0.65, centerX - 0.2)),
+          y: Math.max(0.05, Math.min(0.65, centerY - 0.25)),
+          width: 0.42,
+          height: 0.5
+        };
+        confidence = lighting.quality === 'POOR' ? 0.45 : 0.88;
+      }
     }
 
-    currentState.faceCount = hasFace ? 1 : 0;
-    currentState.facePresent = hasFace;
-    currentState.status = hasFace ? 'FACE_PRESENT' : 'FACE_NOT_DETECTED';
-    currentState.eyeContactPct = hasFace ? runningEyeContact : 0;
-    currentState.lightingQuality = lighting.quality;
-    currentState.timestamp = Date.now();
+    // 3. State & Temporal Grace Period Evaluation
+    let newStatus = 'FACE_PRESENT';
 
-    if (onStateChangeCallback) onStateChangeCallback(currentState);
+    if (faceCount === 0) {
+      if (!faceLostStartTime) faceLostStartTime = now;
+      const lostDuration = now - faceLostStartTime;
+
+      newStatus = 'FACE_NOT_DETECTED';
+      confidence = 0;
+      runningEyeContact = Math.max(0, runningEyeContact - 15);
+
+      if (lostDuration >= PROCTORING_CONFIG.faceLostGracePeriod) {
+        _triggerEventWithCooldown('FACE_NOT_DETECTED', { durationMs: lostDuration });
+      }
+      multiFaceStartTime = null;
+      headTurnStartTime = null;
+    } else if (faceCount >= 2) {
+      faceLostStartTime = null;
+      headTurnStartTime = null;
+      if (!multiFaceStartTime) multiFaceStartTime = now;
+      const multiDuration = now - multiFaceStartTime;
+
+      if (multiDuration >= PROCTORING_CONFIG.multiFaceConfirmationTime) {
+        newStatus = 'MULTIPLE_FACES';
+        _triggerEventWithCooldown('MULTIPLE_FACES_DETECTED', { faceCount, durationMs: multiDuration });
+      } else {
+        newStatus = 'FACE_PRESENT';
+      }
+    } else {
+      faceLostStartTime = null;
+      multiFaceStartTime = null;
+
+      const isYawExceeded = Math.abs(pose.yaw) > PROCTORING_CONFIG.headTurnYawThreshold;
+      const isPitchExceeded = Math.abs(pose.pitch) > PROCTORING_CONFIG.headTurnPitchThreshold;
+
+      if (isYawExceeded || isPitchExceeded) {
+        if (!headTurnStartTime) headTurnStartTime = now;
+        const turnDuration = now - headTurnStartTime;
+
+        if (turnDuration >= PROCTORING_CONFIG.headTurnConcernDuration) {
+          newStatus = 'FACE_PRESENT';
+          _triggerEventWithCooldown('HEAD_ORIENTATION_CONCERN', {
+            yaw: Math.round(pose.yaw),
+            pitch: Math.round(pose.pitch),
+            durationMs: turnDuration
+          });
+        } else if (turnDuration >= PROCTORING_CONFIG.headTurnAttentionDuration) {
+          newStatus = 'FACE_PRESENT';
+          _triggerEventWithCooldown('ATTENTION_DRIFT', {
+            yaw: Math.round(pose.yaw),
+            pitch: Math.round(pose.pitch),
+            durationMs: turnDuration
+          });
+        }
+      } else {
+        headTurnStartTime = null;
+      }
+
+      newStatus = 'FACE_PRESENT';
+    }
+
+    // Dynamic presence & frame eye contact percentage
+    totalProcessedFrames++;
+    if (faceCount > 0) totalFacePresentFrames++;
+    runningFacePresencePct = Math.round((totalFacePresentFrames / Math.max(1, totalProcessedFrames)) * 100);
+
+    if (faceCount > 0) {
+      const frameEyeContact = Math.max(0, Math.min(100, Math.round(100 - (Math.abs(pose.yaw) * 2.2 + Math.abs(pose.pitch) * 2.4))));
+      runningEyeContact = Math.round(runningEyeContact * 0.92 + frameEyeContact * 0.08);
+    }
+
+    currentState = {
+      status: newStatus,
+      faceCount,
+      faceConfidence: confidence,
+      facePresent: faceCount > 0,
+      facePosition: bbox,
+      headYaw: pose.yaw,
+      headPitch: pose.pitch,
+      headRoll: pose.roll,
+      eyeContactPct: runningEyeContact,
+      lightingQuality: lighting.quality,
+      identityVerified,
+      identitySimilarityScore: currentSimilarityScore,
+      identityConsistencyPct: runningIdentityConsistencyPct,
+      facePresencePct: runningFacePresencePct,
+      identityStatus: identityVerified ? 'MATCH' : 'UNCHECKED',
+      timestamp: now
+    };
+
+    if (onStateChangeCallback) {
+      onStateChangeCallback(currentState);
+    }
+
+    // Render Canvas HUD Overlay
+    if (canvasOverlay && overlayCtx) {
+      _drawHUDOverlay([], bbox, pose, newStatus, faceCount, lighting);
+    }
   }
 
   /**

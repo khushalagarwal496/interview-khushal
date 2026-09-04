@@ -360,8 +360,15 @@ header {
     <div class="video-grid">
 
       <!-- LEFT: AI INTERVIEWER -->
-      <div class="video-card">
-        <img class="video-img" id="ai-video-img" src="ai_interviewer.jpg" alt="Dr. Aris Thorne — AI Technical Recruiter" />
+      <div class="video-card" style="background: radial-gradient(circle at center, #151928 0%, #080b14 100%);">
+        <img class="video-img" id="ai-video-img" src="ai_interviewer.jpg" alt="Dr. Aris Thorne — AI Technical Recruiter" onerror="this.style.opacity='0.2';" />
+        <div id="ai-fallback-avatar" style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; pointer-events:none; z-index:2;">
+          <div style="width:96px; height:96px; border-radius:50%; background:linear-gradient(135deg, rgba(157,143,255,0.4), rgba(103,232,249,0.4)); border:2px solid rgba(157,143,255,0.5); display:grid; place-items:center; font-size:42px; box-shadow:0 0 35px rgba(157,143,255,0.35);">
+            🤖
+          </div>
+          <div style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:700; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,0.8);">Dr. Aris Thorne</div>
+          <div style="font-size:11px; color:var(--cyan); background:rgba(103,232,249,0.12); border:1px solid rgba(103,232,249,0.3); padding:3px 10px; border-radius:999px;">AI Recruiter Online</div>
+        </div>
 
         <!-- AI Speaking Wave -->
         <div class="speaking-wave" id="ai-speaking-badge">
@@ -1122,7 +1129,7 @@ function _saveAnalyticsReport(apiReport = {}) {
 }
 
 // ─── ENTRY POINT ──────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+function initInterviewPage() {
   const cName = localStorage.getItem('candidateName') || 'Candidate';
   const initial = cName[0]?.toUpperCase() || 'C';
 
@@ -1137,8 +1144,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const role = localStorage.getItem('targetRole') || 'Full Stack Developer';
   const round = localStorage.getItem('interviewType') || 'Technical';
-  document.getElementById('candidate-tag-name').textContent = `${cName} (You)`;
-  document.getElementById('candidate-role-tag').textContent = `Candidate · ${role}`;
+  const cTagEl = document.getElementById('candidate-tag-name');
+  if (cTagEl) cTagEl.textContent = `${cName} (You)`;
+  const cRoleEl = document.getElementById('candidate-role-tag');
+  if (cRoleEl) cRoleEl.textContent = `Candidate · ${role}`;
   const dockTag = document.getElementById('dock-round-tag');
   if (dockTag) dockTag.textContent = `• ${round}`;
 
@@ -1148,14 +1157,12 @@ window.addEventListener('DOMContentLoaded', () => {
   const canvasOverlay = document.getElementById('landmark-canvas');
 
   // ── CAMERA SETUP (ES module side) ────────────────────────────
-  // The plain <script> above handles getUserMedia and camera UI.
-  // Here we hook FaceDetectionService init onto window._startCamera
-  // so face detection starts after camera is activated.
-
   const _baseCameraStart = window._startCamera;
   window._startCamera = async function() {
-    await _baseCameraStart();
-    // After camera is active, init face detection
+    if (typeof _baseCameraStart === 'function') {
+      await _baseCameraStart();
+    }
+    // After camera is active, init face detection on modal video
     if (window._mediaStream) {
       try {
         await FaceDetectionService.init(modalVid || mainVid, canvasOverlay, {
@@ -1169,54 +1176,63 @@ window.addEventListener('DOMContentLoaded', () => {
   // Hook _captureIdentity to also use FaceDetectionService if available
   const _baseCaptureIdentity = window._captureIdentity;
   window._captureIdentity = function() {
-    _baseCaptureIdentity();
-    // Also save FaceDetectionService reference if landmarks available
+    if (typeof _baseCaptureIdentity === 'function') {
+      _baseCaptureIdentity();
+    }
     if (window._mediaStream) {
       try { FaceDetectionService.captureSessionReference(modalVid || mainVid); } catch(e) {}
     }
   };
 
-  // Start Interview — defined as named function so window._startInterview can call it
+  // Start Interview — full production version
   const _doStartInterview = async () => {
-
     try { await document.documentElement.requestFullscreen(); } catch(e){}
 
     const modal = document.getElementById('consent-modal');
     if (modal) modal.classList.remove('active');
 
-    // Attempt Media Stream (Video + Audio) with Audio-only and Static fallbacks if not already active
     const vid = document.getElementById('webcam-feed');
     const canvasOverlay = document.getElementById('landmark-canvas');
     const img = document.getElementById('candidate-static-img');
 
-    if (!mediaStream) {
+    // Use shared media stream from camera permission step
+    let activeStream = window._mediaStream || mediaStream;
+    if (!activeStream) {
       try {
+        activeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: true });
+        window._mediaStream = activeStream;
+        mediaStream = activeStream;
+      } catch (videoErr) {
         try {
-          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        } catch (videoErr) {
-          console.warn('Full media access failed, trying video only:', videoErr);
-          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          activeStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          window._mediaStream = activeStream;
+          mediaStream = activeStream;
+        } catch(e) {
+          console.warn('Could not acquire live stream:', e);
         }
-      } catch(err) {
-        console.warn('Media devices warning:', err);
       }
     }
 
-    if (mediaStream && vid) {
-      vid.srcObject = mediaStream;
+    if (activeStream && vid) {
+      vid.srcObject = activeStream;
+      vid.muted = true;
       vid.style.display = 'block';
       if (img) img.style.display = 'none';
       isWebcamOn = true;
       try { await vid.play(); } catch(e){}
-
-      try {
-        await FaceDetectionService.init(vid, canvasOverlay, {
-          onStateChange: handleStateChange,
-          onWarning: (evt) => showBannerMsg(`⚠️ Integrity Event: ${evt.replace(/_/g, ' ')}`, false)
-        });
-      } catch(e){}
     }
 
+    // Always start real-time computer vision tracking
+    try {
+      await FaceDetectionService.init(vid || modalVid, canvasOverlay, {
+        onStateChange: handleStateChange,
+        onWarning: (evt) => showBannerMsg(`⚠️ Integrity Event: ${evt.replace(/_/g, ' ')}`, false)
+      });
+    } catch(e) {
+      console.warn('FaceDetectionService init warning:', e);
+    }
+
+    // Initialize speech recognition
     try {
       initSpeechRecognition();
     } catch (srErr) {
@@ -1251,7 +1267,7 @@ window.addEventListener('DOMContentLoaded', () => {
       console.warn('ProctoringService init warning:', procErr);
     }
 
-    // Start session API call
+    // Start session API call or fallback
     try {
       const res = await fetch('/api/interview/start', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1275,23 +1291,38 @@ window.addEventListener('DOMContentLoaded', () => {
         throw new Error('Invalid API response');
       }
     } catch(e) {
-      currentQText = `Welcome ${cName}! I'm Dr. Aris Thorne. Let's begin. Please start by introducing yourself and describing your most impactful project.`;
+      currentQText = `Welcome ${cName}! I'm Dr. Aris Thorne from PrepPilot AI. Let's begin your interview. Please start by introducing yourself and describing your most impactful project.`;
       document.getElementById('caption-text').textContent = `"${currentQText}"`;
       speakQuestion(currentQText);
     }
 
-
     startSessionTimer();
   };
 
-  // Override the plain-script fallback with the full ES module version
+  // Assign global handler
   window._startInterview = _doStartInterview;
 
+  const startBtn = document.getElementById('start-interview-btn');
+  if (startBtn) {
+    startBtn.onclick = _doStartInterview;
+  }
 
-  document.getElementById('end-interview-btn').addEventListener('click', finishInterviewSession);
-  document.getElementById('view-analysis-btn').addEventListener('click', () => window.navigateToAnalysis());
-  document.getElementById('return-dashboard-btn').addEventListener('click', () => window.location.href = 'index.html');
-});
+  const endBtn = document.getElementById('end-interview-btn');
+  if (endBtn) endBtn.addEventListener('click', finishInterviewSession);
+
+  const viewAnalysisBtn = document.getElementById('view-analysis-btn');
+  if (viewAnalysisBtn) viewAnalysisBtn.addEventListener('click', () => window.navigateToAnalysis());
+
+  const returnDashboardBtn = document.getElementById('return-dashboard-btn');
+  if (returnDashboardBtn) returnDashboardBtn.addEventListener('click', () => window.location.href = 'index.html');
+}
+
+// Execute immediately if DOM is ready, or on DOMContentLoaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initInterviewPage);
+} else {
+  initInterviewPage();
+}
 </script>
 </body>
 </html>
