@@ -292,7 +292,7 @@ app.post('/api/interview/proctoring-event', (req, res) => {
   res.json({ success: true, event });
 });
 
-// Named routes for key pages
+// Serve specific static pages
 app.get('/interview-analysis', (req, res) => {
   res.sendFile(path.join(__dirname, 'interview-analysis.html'));
 });
@@ -302,9 +302,16 @@ app.get('/interview-analysis.html', (req, res) => {
 app.get('/video-interview', (req, res) => {
   res.sendFile(path.join(__dirname, 'video-interview.html'));
 });
-
-// Serve index.html as main entry
-app.get('*', (req, res) => {
+app.get('/video-interview.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'video-interview.html'));
+});
+app.get('/interview', (req, res) => {
+  res.sendFile(path.join(__dirname, 'interview.html'));
+});
+app.get('/interview.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'interview.html'));
+});
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
