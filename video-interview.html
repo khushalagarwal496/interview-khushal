@@ -254,13 +254,18 @@ header {
     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:18px; padding:16px; margin:12px 0; text-align:left;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <span style="font-family:'Outfit',sans-serif; font-size:13.5px; font-weight:700; color:#fff;">📷 Identity Verification</span>
-        <button id="verify-identity-btn" style="padding:6px 14px; font-size:12px; font-weight:700; background:rgba(200,255,94,0.15); border:1px solid var(--lime); color:var(--lime); border-radius:10px; cursor:pointer; transition:all 0.2s;">
-          Verify Identity
-        </button>
+        <div style="display:flex; gap:8px;">
+          <button id="request-perm-btn" style="padding:6px 12px; font-size:11.5px; font-weight:700; background:rgba(59,130,246,0.2); border:1px solid #3b82f6; color:#93c5fd; border-radius:10px; cursor:pointer; transition:all 0.2s;">
+            🎙️ Enable Camera & Mic
+          </button>
+          <button id="verify-identity-btn" style="padding:6px 14px; font-size:12px; font-weight:700; background:rgba(200,255,94,0.15); border:1px solid var(--lime); color:var(--lime); border-radius:10px; cursor:pointer; transition:all 0.2s;">
+            Verify Identity
+          </button>
+        </div>
       </div>
 
       <!-- Live Modal Video & Captured Snapshot Preview Container -->
-      <div style="position:relative; width:100%; height:160px; background:#080b16; border-radius:14px; overflow:hidden; border:1px solid rgba(200,255,94,0.3); margin-bottom:12px;">
+      <div style="position:relative; width:100%; height:165px; background:#080b16; border-radius:14px; overflow:hidden; border:1px solid rgba(200,255,94,0.3); margin-bottom:12px;">
         <video id="modal-webcam-feed" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:block;"></video>
         <img id="modal-snapshot-preview" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:none; border:2px solid var(--lime);" alt="Verified Candidate Snapshot"/>
         <div id="modal-snapshot-badge" style="display:none; position:absolute; bottom:8px; left:8px; padding:4px 10px; background:rgba(8,11,22,0.85); border:1px solid var(--lime); color:var(--lime); font-weight:700; font-size:11px; border-radius:8px; backdrop-filter:blur(8px);">
@@ -848,30 +853,81 @@ window.addEventListener('DOMContentLoaded', () => {
   const round = localStorage.getItem('interviewType') || 'Technical';
   document.getElementById('candidate-tag-name').textContent = `${cName} (You)`;
   document.getElementById('candidate-role-tag').textContent = `Candidate · ${role}`;
-  // Pre-interview live camera stream setup for modal preview
-  const modalVid = document.getElementById('modal-webcam-feed');
-  const mainVid = document.getElementById('webcam-feed');
-  const canvasOverlay = document.getElementById('landmark-canvas');
+  // Setup explicit media permissions and modal stream preview
+  const setupMediaPermissions = async () => {
+    const modalVid = document.getElementById('modal-webcam-feed');
+    const mainVid = document.getElementById('webcam-feed');
+    const canvasOverlay = document.getElementById('landmark-canvas');
+    const permBtn = document.getElementById('request-perm-btn');
+    const msgBox = document.getElementById('id-verification-msg');
 
-  navigator.mediaDevices?.getUserMedia({ video: true, audio: true }).then(async stream => {
-    mediaStream = stream;
-    if (modalVid) {
-      modalVid.srcObject = stream;
-      try { await modalVid.play(); } catch(e){}
-    }
-    if (mainVid) {
-      mainVid.srcObject = stream;
-    }
-    // Initialize FaceDetectionService early for pre-interview modal check
     try {
-      await FaceDetectionService.init(modalVid || mainVid, canvasOverlay, {
-        onStateChange: handleStateChange,
-        onWarning: (evt) => showBannerMsg(`⚠️ Integrity Event: ${evt.replace(/_/g, ' ')}`, false)
-      });
-    } catch(e) { console.warn('Early vision init warning:', e); }
-  }).catch(err => {
-    console.warn('Pre-interview camera access warning:', err);
-  });
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true });
+      } catch (e1) {
+        console.warn('Video+Audio getUserMedia failed, trying video-only:', e1);
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        } catch (e2) {
+          console.warn('Video-only getUserMedia failed, trying default constraints:', e2);
+          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
+      }
+
+      if (mediaStream) {
+        if (modalVid) {
+          modalVid.srcObject = mediaStream;
+          try { await modalVid.play(); } catch(e){}
+        }
+        if (mainVid) {
+          mainVid.srcObject = mediaStream;
+          try { await mainVid.play(); } catch(e){}
+        }
+
+        if (permBtn) {
+          permBtn.textContent = '✅ Camera Active';
+          permBtn.style.background = 'rgba(74,222,128,0.15)';
+          permBtn.style.borderColor = 'rgba(74,222,128,0.4)';
+          permBtn.style.color = '#86efac';
+        }
+
+        if (msgBox) {
+          msgBox.textContent = 'Please look naturally toward the camera to verify your identity.';
+          msgBox.style.background = 'rgba(59,130,246,0.1)';
+          msgBox.style.borderColor = 'rgba(59,130,246,0.3)';
+          msgBox.style.color = '#93c5fd';
+        }
+
+        // Initialize FaceDetectionService for modal check
+        try {
+          await FaceDetectionService.init(modalVid || mainVid, canvasOverlay, {
+            onStateChange: handleStateChange,
+            onWarning: (evt) => showBannerMsg(`⚠️ Integrity Event: ${evt.replace(/_/g, ' ')}`, false)
+          });
+        } catch(e) { console.warn('Early vision init warning:', e); }
+      }
+    } catch(err) {
+      console.warn('Camera permission request error:', err);
+      if (permBtn) {
+        permBtn.textContent = '⚠️ Click to Grant Camera Access';
+        permBtn.style.background = 'rgba(239,68,68,0.15)';
+        permBtn.style.borderColor = 'rgba(239,68,68,0.4)';
+        permBtn.style.color = '#fca5a5';
+      }
+      if (msgBox) {
+        msgBox.textContent = '⚠️ Camera permission is required for identity check. Please allow camera access in your browser.';
+        msgBox.style.background = 'rgba(239,68,68,0.1)';
+        msgBox.style.borderColor = 'rgba(239,68,68,0.3)';
+        msgBox.style.color = '#fca5a5';
+      }
+    }
+  };
+
+  const reqPermBtn = document.getElementById('request-perm-btn');
+  if (reqPermBtn) {
+    reqPermBtn.addEventListener('click', setupMediaPermissions);
+  }
+  setupMediaPermissions();
 
   // Attach button click for Pre-Interview Identity Check button
   const verifyBtn = document.getElementById('verify-identity-btn');
@@ -884,9 +940,12 @@ window.addEventListener('DOMContentLoaded', () => {
       const snapBadge = document.getElementById('modal-snapshot-badge');
 
       if (res.success) {
-        if (res.photoDataUrl && snapImg) {
-          snapImg.src = res.photoDataUrl;
-          snapImg.style.display = 'block';
+        if (res.photoDataUrl) {
+          localStorage.setItem('prepPilotCandidateSnapshot', res.photoDataUrl);
+          if (snapImg) {
+            snapImg.src = res.photoDataUrl;
+            snapImg.style.display = 'block';
+          }
           if (snapBadge) snapBadge.style.display = 'block';
         }
         if (msgBox) {
@@ -915,45 +974,37 @@ window.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('consent-modal');
     if (modal) modal.classList.remove('active');
 
-    // Attempt Media Stream (Video + Audio) with Audio-only and Static fallbacks
+    // Attempt Media Stream (Video + Audio) with Audio-only and Static fallbacks if not already active
     const vid = document.getElementById('webcam-feed');
     const canvasOverlay = document.getElementById('landmark-canvas');
     const img = document.getElementById('candidate-static-img');
 
-    try {
+    if (!mediaStream) {
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      } catch (videoErr) {
-        console.warn('Full media access failed, trying audio only:', videoErr);
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      }
-
-      if (mediaStream) {
-        if (vid && mediaStream.getVideoTracks().length > 0) {
-          vid.srcObject = mediaStream;
-          vid.style.display = 'block';
-          if (img) img.style.display = 'none';
-          isWebcamOn = true;
-          try { await vid.play(); } catch(e){}
-
-          // Start computer vision tracking & HUD overlay safely
-          try {
-            await FaceDetectionService.init(vid, canvasOverlay, {
-              onStateChange: handleStateChange,
-              onWarning: (evt, extras) => {
-                showBannerMsg(`⚠️ Integrity Event: ${evt.replace(/_/g, ' ')}`, false);
-              }
-            });
-          } catch (visionErr) {
-            console.warn('FaceDetectionService init warning:', visionErr);
-          }
-        } else {
-          showBannerMsg('🎙️ Microphone active. Camera feed unavailable — running in audio mode.', false);
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        } catch (videoErr) {
+          console.warn('Full media access failed, trying video only:', videoErr);
+          mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         }
+      } catch(err) {
+        console.warn('Media devices warning:', err);
       }
-    } catch(err) {
-      console.warn('Media devices warning:', err);
-      showBannerMsg('⚠️ Camera & microphone access unavailable. Continuing in standard interview mode.', false);
+    }
+
+    if (mediaStream && vid) {
+      vid.srcObject = mediaStream;
+      vid.style.display = 'block';
+      if (img) img.style.display = 'none';
+      isWebcamOn = true;
+      try { await vid.play(); } catch(e){}
+
+      try {
+        await FaceDetectionService.init(vid, canvasOverlay, {
+          onStateChange: handleStateChange,
+          onWarning: (evt) => showBannerMsg(`⚠️ Integrity Event: ${evt.replace(/_/g, ' ')}`, false)
+        });
+      } catch(e){}
     }
 
     try {
