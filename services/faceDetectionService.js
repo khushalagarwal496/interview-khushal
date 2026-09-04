@@ -716,8 +716,6 @@ const FaceDetectionService = (() => {
 
     return { success: false, reason: 'CAMERA_STREAM_NOT_READY' };
   }
-    return { success: false, reason: 'DESCRIPTOR_EXTRACTION_FAILED' };
-  }
 
   /**
    * Evaluates live candidate facial consistency against session reference with temporal smoothing
