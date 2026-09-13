@@ -1526,10 +1526,12 @@ function launchConfiguredInterview() {
     <a href="#features">Features</a>
     <a href="#mock">AI Interview</a>
     <a href="#flow">How it works</a>
-    <a href="#stats">Results</a>
+    <a href="/profile.html" style="color:var(--lime);">Profile & PDF Parser ✦</a>
+    <a href="/interview-analysis.html">Analysis</a>
   </div>
-  <div class="nav-actions">
-    <a class="navbtn" href="javascript:void(0)" onclick="openPreinterviewSetup()">Sign in</a>
+  <div class="nav-actions" id="nav-actions-container">
+    <a class="navbtn" href="/signin.html" id="nav-signin-btn">Sign in</a>
+    <a class="navbtn" href="/profile.html" id="nav-profile-btn" style="display:none;">My Profile</a>
     <a class="navbtn cta-nav" href="javascript:void(0)" onclick="openPreinterviewSetup()" id="nav-cta">Start free ↗</a>
   </div>
 </nav>
@@ -2283,6 +2285,25 @@ document.head.appendChild(styleEl);
     requestAnimationFrame(lerp);
   })();
 })();
+
+// Check user login status for navbar
+document.addEventListener('DOMContentLoaded', () => {
+  const userJson = localStorage.getItem('prepPilotUser');
+  if (userJson) {
+    try {
+      const u = JSON.parse(userJson);
+      if (u && u.name) {
+        const signinBtn = document.getElementById('nav-signin-btn');
+        const profileBtn = document.getElementById('nav-profile-btn');
+        if (signinBtn) signinBtn.style.display = 'none';
+        if (profileBtn) {
+          profileBtn.style.display = 'inline-flex';
+          profileBtn.textContent = `👤 ${u.name.split(' ')[0]}`;
+        }
+      }
+    } catch(e){}
+  }
+});
 </script>
 </body>
 </html>
