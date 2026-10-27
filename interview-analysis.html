@@ -345,11 +345,12 @@ header {
       </div>
     </a>
     <div class="header-actions">
-    <a class="btn-nav" href="/profile.html" style="color:var(--lime);">👤 Candidate Profile</a>
-    <button class="btn-nav" onclick="copyShareableSummary()">✨ Share Summary</button>
-    <button class="btn-nav primary" onclick="window.print()">📥 Download Report</button>
-    <a class="btn-nav" href="index.html">← Back to Home</a>
-  </div>
+      <a class="btn-nav" href="/profile.html" style="color:var(--lime);">👤 Candidate Profile</a>
+      <button class="btn-nav" onclick="copyShareableSummary()">✨ Share Summary</button>
+      <button class="btn-nav" onclick="window.print()" title="Print / Export PDF">📄 Export PDF</button>
+      <a class="btn-nav primary" href="/video-interview.html">Practice Again 🚀</a>
+      <a class="btn-nav" href="index.html">← Home</a>
+    </div>
 </header>
 
 <!-- Floating Toast Container -->
@@ -366,12 +367,27 @@ header {
           <div class="meta-chip" id="hero-role-chip">Full Stack Developer</div>
           <div class="meta-chip" id="hero-company-chip">Tech Giant (FAANG)</div>
           <div class="meta-chip" id="hero-round-chip">Technical Round</div>
+          <div id="verdict-banner" style="display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; background:rgba(200,255,94,0.14); border:1px solid rgba(200,255,94,0.3); font-size:11.5px; font-weight:800; color:var(--lime);">
+            <span>🎯</span>
+            <span id="verdict-badge">STRONG HIRE</span>
+          </div>
         </div>
 
         <h1 class="hero-title" id="hero-candidate-name">Interview Performance Report</h1>
-        <p class="hero-summary" id="hero-ai-summary">
+        <p class="hero-summary" id="hero-ai-summary" style="margin-bottom:14px;">
           Strong performance demonstrating solid technical foundation, clear project articulation, and proactive API security practices.
         </p>
+
+        <!-- Executive Review Box -->
+        <div id="ai-exec-box" style="padding:12px 18px; border-radius:14px; background:rgba(157,143,255,0.06); border:1px solid rgba(157,143,255,0.18); margin-bottom:18px;">
+          <div style="font-size:11px; font-weight:800; color:var(--violet); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+            <span>🤖</span>
+            <span>Dr. Aris Thorne's Executive Review</span>
+          </div>
+          <p id="ai-exec-summary" style="font-size:13px; color:#d1d5db; line-height:1.55; margin:0;">
+            "Candidate displayed solid problem-solving composure and articulated trade-offs well. Recommended for advancement with focus on distributed database edge cases."
+          </p>
+        </div>
 
         <div class="hero-stats-row">
           <div class="hero-stat-item">
@@ -722,11 +738,28 @@ header {
       <div class="card">
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
           <span style="font-size:18px;">🎯</span>
-          <span style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:800; color:#fff;">Areas for Improvement</span>
+          <span style="font-family:'Outfit',sans-serif; font-size:16px; font-weight:800; color:#fff;">Targeted Improvement Areas</span>
         </div>
         <div class="feedback-card" id="improvements-list" style="border-color:rgba(244,114,182,0.2);"></div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ══════════════ CURATED PLACEMENT RESOURCES ══════════════ -->
+  <div class="section">
+    <div class="card" style="border-color:rgba(103,232,249,0.22); background:linear-gradient(135deg, rgba(103,232,249,0.03), rgba(157,143,255,0.05));">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+        <div>
+          <div style="font-size:11px; font-weight:800; color:var(--cyan); text-transform:uppercase; letter-spacing:0.5px;">📚 Curated Placement Resources</div>
+          <h2 style="font-family:'Outfit',sans-serif; font-size:20px; font-weight:800; color:#fff; margin-top:2px;">Recommended Technical References for Your Role</h2>
+        </div>
+        <span style="font-size:12px; color:var(--muted); font-weight:600;">Personalized by Gemini AI</span>
+      </div>
+
+      <div class="grid-3" id="resources-grid" style="gap:14px;">
+        <!-- Dynamic resource cards -->
+      </div>
     </div>
   </div>
 
@@ -801,7 +834,7 @@ header {
   const isTerminated = (meta.status === 'AUTO_TERMINATED');
 
   // Candidate Profile
-  const candidateName = meta.candidateName || localStorage.getItem('candidateName') || 'Sarah Jenkins';
+  const candidateName = meta.candidateName || localStorage.getItem('candidateName') || 'Candidate';
   const role = meta.targetRole || localStorage.getItem('targetRole') || 'Full Stack Developer';
   const company = meta.targetCompany || localStorage.getItem('targetCompany') || 'Tech Giant (FAANG)';
   const round = meta.interviewType || localStorage.getItem('interviewType') || 'Technical Round';
@@ -820,13 +853,45 @@ header {
 
   let gradeLabel = 'STRONG';
   let strokeColor = 'var(--lime)';
-  if (overallScore >= 90) { gradeLabel = 'EXCELLENT'; strokeColor = 'var(--lime)'; }
-  else if (overallScore >= 75) { gradeLabel = 'STRONG'; strokeColor = 'var(--cyan)'; }
-  else if (overallScore >= 60) { gradeLabel = 'NEEDS IMP.'; strokeColor = 'var(--amber)'; }
-  else { gradeLabel = 'LOW'; strokeColor = 'var(--pink)'; }
+  let verdictText = 'STRONG HIRE (Placement Ready)';
+  let verdictBg = 'rgba(200,255,94,0.14)';
+
+  if (overallScore >= 90) { 
+    gradeLabel = 'EXCELLENT'; 
+    strokeColor = 'var(--lime)'; 
+    verdictText = 'STRONG HIRE (Top 5% Placement Ready)';
+  } else if (overallScore >= 75) { 
+    gradeLabel = 'STRONG'; 
+    strokeColor = 'var(--cyan)'; 
+    verdictText = 'HIRE (Meets Target Bar)';
+    verdictBg = 'rgba(103,232,249,0.14)';
+  } else if (overallScore >= 60) { 
+    gradeLabel = 'NEEDS IMP.'; 
+    strokeColor = 'var(--amber)'; 
+    verdictText = 'LEANING HIRE (Requires Further Coaching)';
+    verdictBg = 'rgba(251,191,36,0.14)';
+  } else { 
+    gradeLabel = 'LOW'; 
+    strokeColor = 'var(--pink)'; 
+    verdictText = 'NEEDS PREPARATION';
+    verdictBg = 'rgba(244,114,182,0.14)';
+  }
 
   setText('hero-grade-label', gradeLabel);
   setColor('hero-grade-label', strokeColor);
+
+  const verdictEl = document.getElementById('verdict-badge');
+  const verdictBanner = document.getElementById('verdict-banner');
+  if (verdictEl) verdictEl.textContent = verdictText;
+  if (verdictBanner) {
+    verdictBanner.style.color = strokeColor;
+    verdictBanner.style.background = verdictBg;
+    verdictBanner.style.borderColor = strokeColor;
+  }
+
+  // Executive Review Summary
+  const execSummary = perf.executiveSummary || `Candidate demonstrated solid understanding of software engineering fundamentals and articulated project trade-offs effectively. Recommended for ${role} roles with continued focus on distributed system resiliency.`;
+  setText('ai-exec-summary', `"${execSummary}"`);
 
   // SVG ring stroke dash offset calculation (r=70 -> circumference ~440)
   const circle = document.getElementById('score-ring-circle');
@@ -987,8 +1052,8 @@ header {
   const defaultQuestions = [
     {
       questionIndex: 1,
-      questionText: `Tell me about yourself and your architectural choices in Campus Bridge.`,
-      candidateAnswer: `I am a Full Stack Developer specializing in React and Node.js microservices. In my recent Campus Bridge project, I designed a real-time event-driven architecture using PostgreSQL for ACID compliance and Firebase Auth for secure session token verification.`,
+      questionText: `Tell me about yourself and your primary technical project architecture.`,
+      candidateAnswer: `I am a Full Stack Developer specializing in React and Node.js microservices. In my recent project, I designed a real-time event-driven architecture using PostgreSQL for ACID compliance and token verification.`,
       score: 88, relevance: 94, clarity: 90, technicalDepth: 84, confidence: 92,
       status: `Strong Answer`,
       feedback: `Excellent technical introduction. Clear explanation of state management boundaries and database choices. To improve, mention your benchmark numbers.`
@@ -1152,6 +1217,45 @@ header {
     'Provide more concrete project impact metrics with benchmark numbers.',
     'Structure long technical responses using the STAR methodology.'
   ];
+
+  const strengthsEl = document.getElementById('strengths-list');
+  if (strengthsEl) {
+    strengthsEl.innerHTML = strengths.map(s => `
+      <div style="display:flex; align-items:flex-start; gap:10px; padding:11px 14px; border-radius:12px; background:rgba(200,255,94,0.06); border:1px solid rgba(200,255,94,0.18); margin-bottom:8px;">
+        <span style="color:var(--lime); font-size:14px; font-weight:800; line-height:1.4;">✓</span>
+        <span style="font-size:13px; color:#e2e8f0; line-height:1.5;">${s}</span>
+      </div>
+    `).join('');
+  }
+
+  const improvementsEl = document.getElementById('improvements-list');
+  if (improvementsEl) {
+    improvementsEl.innerHTML = improvements.map(imp => `
+      <div style="display:flex; align-items:flex-start; gap:10px; padding:11px 14px; border-radius:12px; background:rgba(244,114,182,0.06); border:1px solid rgba(244,114,182,0.18); margin-bottom:8px;">
+        <span style="color:var(--pink); font-size:14px; font-weight:800; line-height:1.4;">⚠️</span>
+        <span style="font-size:13px; color:#e2e8f0; line-height:1.5;">${imp}</span>
+      </div>
+    `).join('');
+  }
+
+  // 6. Render Curated Resources
+  const resources = (perf.aiRecommendations?.length > 0 ? perf.aiRecommendations : (perf.suggestedResources?.length > 0 ? perf.suggestedResources : [
+    'Designing Data-Intensive Applications by Martin Kleppmann',
+    'System Design Interview by Alex Xu',
+    'High Performance Browser Networking by Ilya Grigorik'
+  ]));
+
+  const resourcesGrid = document.getElementById('resources-grid');
+  if (resourcesGrid) {
+    const icons = ['📘', '🚀', '🛡️', '⚡', '📊'];
+    resourcesGrid.innerHTML = resources.map((res, i) => `
+      <div style="padding:16px; border-radius:14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:8px;">
+        <div style="font-size:24px;">${icons[i % icons.length]}</div>
+        <div style="font-size:13.5px; font-weight:700; color:#fff; line-height:1.45;">${res}</div>
+        <div style="font-size:11.5px; color:var(--cyan); font-weight:600; margin-top:auto;">Recommended for ${role}</div>
+      </div>
+    `).join('');
+  }
 
   // Update Filter Counters
   setText('cnt-filter-all', totalQ);

@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const geminiService = require('./services/geminiService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -83,7 +85,51 @@ const usersDb = new Map([
 
 // Health Check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', serverTime: new Date().toISOString(), app: 'PrepPilot AI Context Engine' });
+  res.json({ 
+    status: 'ok', 
+    serverTime: new Date().toISOString(), 
+    app: 'PrepPilot AI Context Engine',
+    aiConfigured: geminiService.isAiConfigured()
+  });
+});
+
+// AI Configuration Status
+app.get('/api/ai/status', (req, res) => {
+  const isConfigured = geminiService.isAiConfigured();
+  const rawKey = geminiService.getApiKey();
+  const maskedKey = rawKey && rawKey.length > 8 
+    ? `${rawKey.substring(0, 4)}...${rawKey.substring(rawKey.length - 4)}` 
+    : (isConfigured ? '***configured***' : 'not_set');
+
+  res.json({
+    success: true,
+    provider: 'Google Gemini',
+    isConfigured,
+    maskedKey,
+    model: 'gemini-1.5-flash / gemini-2.0-flash',
+    features: [
+      'Resume-Tailored Initial Question',
+      'Adaptive In-Flight Follow-Ups based on Candidate Answers',
+      'Dynamic Technical Scoring & Coaching Tips',
+      'AI-Powered Final Readiness & Performance Report',
+      'AI Resume Parser'
+    ]
+  });
+});
+
+// Set / Update AI Key at Runtime
+app.post('/api/ai/set-key', (req, res) => {
+  const { apiKey } = req.body;
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 10) {
+    return res.status(400).json({ success: false, message: 'Invalid API key provided.' });
+  }
+
+  geminiService.setApiKey(apiKey.trim());
+  res.json({
+    success: true,
+    message: 'Google Gemini API key updated successfully.',
+    isConfigured: geminiService.isAiConfigured()
+  });
 });
 
 // AUTH: Login API
@@ -247,24 +293,45 @@ app.post('/api/user/profile', (req, res) => {
 });
 
 // START INTERVIEW SESSION API
-app.post('/api/interview/start', (req, res) => {
+app.post('/api/interview/start', async (req, res) => {
   const { 
     sessionId = `session_${Date.now()}`,
     jobRole = 'Full Stack Developer',
     interviewType = 'Technical & Architecture',
     experienceLevel = 'Mid Level (2-5 yrs)',
-    resumeHighlights = 'Campus Bridge platform, React, Node.js, Firebase Auth, PostgreSQL',
+    resumeHighlights = '',
     targetCompany = 'Tech Giant (FAANG)',
     difficultyLevel = 3,
-    candidateName = 'Khushal Agarwal'
+    candidateName = 'Candidate'
   } = req.body;
 
-  const projectMention = resumeHighlights.split(',')[0] || 'your core projects';
-  const initialGreeting = `Welcome ${candidateName}! I'm Dr. Aris Thorne, your AI Recruiter. We are calibrating this ${interviewType} session for a ${experienceLevel} ${jobRole} position at ${targetCompany}. To begin, please introduce yourself and walk me through your architecture choices in ${projectMention}.`;
+  const candidateProfile = { 
+    name: candidateName, 
+    role: jobRole, 
+    experience: experienceLevel, 
+    resume: resumeHighlights, 
+    company: targetCompany 
+  };
+
+  const projectMention = (resumeHighlights && resumeHighlights.trim()) 
+    ? resumeHighlights.split(',')[0].trim() 
+    : 'your core technical projects';
+  let initialGreeting = `Welcome ${candidateName}! I'm Dr. Aris Thorne, your AI Recruiter. We are calibrating this ${interviewType} session for a ${experienceLevel} ${jobRole} position at ${targetCompany}. To begin, please introduce yourself and walk me through your key architecture choices in ${projectMention}.`;
+
+  // Try real Gemini AI generation if configured
+  try {
+    const aiResult = await geminiService.generateInitialQuestion(candidateProfile, interviewType, Number(difficultyLevel) || 3);
+    if (aiResult && aiResult.greeting) {
+      initialGreeting = aiResult.greeting;
+      console.log(`[Gemini AI] Generated personalized greeting for ${candidateName} (${jobRole})`);
+    }
+  } catch (err) {
+    console.warn('[Gemini AI] Initial question generation failed, using fallback:', err.message);
+  }
 
   const sessionContext = {
     sessionId,
-    candidateProfile: { name: candidateName, role: jobRole, experience: experienceLevel, resume: resumeHighlights, company: targetCompany },
+    candidateProfile,
     interviewType,
     currentQuestionIndex: 1,
     totalQuestions: 5,
@@ -290,14 +357,14 @@ app.post('/api/interview/start', (req, res) => {
 });
 
 // NEXT ADAPTIVE QUESTION API
-app.post('/api/interview/next-question', (req, res) => {
+app.post('/api/interview/next-question', async (req, res) => {
   const { sessionId = 'session_default', answer = '' } = req.body;
 
   let session = activeSessions.get(sessionId);
   if (!session) {
     session = {
       sessionId,
-      candidateProfile: { name: 'Candidate', role: 'Full Stack Developer', experience: 'Mid Level', company: 'General Tech' },
+      candidateProfile: { name: 'Candidate', role: 'Full Stack Developer', experience: 'Mid Level', company: 'General Tech', resume: '' },
       interviewType: 'Technical',
       currentQuestionIndex: 1,
       totalQuestions: 5,
@@ -334,38 +401,61 @@ app.post('/api/interview/next-question', (req, res) => {
     session.evaluatedSkills.push("Core Problem Solving");
   }
 
-  session.scores.push(qScore);
-  session.currentQuestionIndex++;
+  let coachingTip = isUncertain 
+    ? "Tip: When unsure, break down your response into core engineering principles." 
+    : "Tip: Great technical depth! Continue using concrete metrics.";
 
   let nextQuestionText = "";
-  let isComplete = session.currentQuestionIndex > session.totalQuestions;
+  let isComplete = (session.currentQuestionIndex + 1) > session.totalQuestions;
 
-  if (isComplete) {
-    nextQuestionText = "Thank you for completing the interview session. Your responses have been processed by PrepPilot AI.";
+  // Try Real Gemini AI Follow-Up Generation
+  let aiFollowUp = null;
+  try {
+    aiFollowUp = await geminiService.generateAdaptiveFollowUp(session, cleanAnswer);
+  } catch (err) {
+    console.warn('[Gemini AI] Adaptive follow-up failed, falling back:', err.message);
+  }
+
+  if (aiFollowUp && aiFollowUp.nextQuestion) {
+    if (typeof aiFollowUp.evaluatedScore === 'number') qScore = aiFollowUp.evaluatedScore;
+    nextQuestionText = aiFollowUp.nextQuestion;
+    if (aiFollowUp.coachingTip) coachingTip = aiFollowUp.coachingTip;
+    if (aiFollowUp.skillEvaluated) session.evaluatedSkills.push(aiFollowUp.skillEvaluated);
+    if (aiFollowUp.weakAreaIdentified) session.weakAreas.push(aiFollowUp.weakAreaIdentified);
+    if (aiFollowUp.adjustedDifficulty) session.difficultyLevel = aiFollowUp.adjustedDifficulty;
+    if (typeof aiFollowUp.isComplete === 'boolean') isComplete = aiFollowUp.isComplete;
+    session.currentQuestionIndex++;
+    console.log(`[Gemini AI] Follow-up generated for Q${session.currentQuestionIndex}. Score: ${qScore}`);
   } else {
-    if (session.currentQuestionIndex === 2) {
-      if (isUncertain) {
-        nextQuestionText = `That's fine. For a ${session.candidateProfile.role}, let's start with basic building blocks: How do you structure state management and API data fetching in your apps?`;
-      } else {
-        nextQuestionText = `Great technical overview! Given your target role as ${session.candidateProfile.role} at ${session.candidateProfile.company}: What specific performance trade-offs did you encounter as traffic grew, and how did you prevent database bottlenecks?`;
-      }
-    } else if (session.currentQuestionIndex === 3) {
-      if (lowerAns.includes("database") || lowerAns.includes("sql") || lowerAns.includes("mongo") || lowerAns.includes("firebase")) {
-        nextQuestionText = `Interesting storage perspective! How would you handle database indexing, token refresh security, and API rate limiting if 100,000 active users hit your service simultaneously?`;
-      } else {
-        nextQuestionText = `Good response! How do you handle error recovery, token rotation, and zero-downtime microservice deployments in your production workflow?`;
-      }
-    } else if (session.currentQuestionIndex === 4) {
-      if (session.difficultyLevel >= 4) {
-        nextQuestionText = `You are demonstrating senior-level depth. Final technical question: How do you design distributed caching and horizontal sharding strategies to guarantee 99.99% availability?`;
-      } else {
-        nextQuestionText = `Good progress! Describe a situation where a technical decision you made turned out to be wrong under high load, and how you refactored it.`;
-      }
+    session.currentQuestionIndex++;
+    if (isComplete) {
+      nextQuestionText = "Thank you for completing the interview session. Your responses have been processed by PrepPilot AI.";
     } else {
-      nextQuestionText = `To wrap up our interview: Tell me about a time when you disagreed with a senior engineer's architectural design and how you used benchmarks to reach alignment.`;
+      if (session.currentQuestionIndex === 2) {
+        if (isUncertain) {
+          nextQuestionText = `That's fine. For a ${session.candidateProfile.role}, let's start with basic building blocks: How do you structure state management and API data fetching in your apps?`;
+        } else {
+          nextQuestionText = `Great technical overview! Given your target role as ${session.candidateProfile.role} at ${session.candidateProfile.company}: What specific performance trade-offs did you encounter as traffic grew, and how did you prevent database bottlenecks?`;
+        }
+      } else if (session.currentQuestionIndex === 3) {
+        if (lowerAns.includes("database") || lowerAns.includes("sql") || lowerAns.includes("mongo") || lowerAns.includes("firebase")) {
+          nextQuestionText = `Interesting storage perspective! How would you handle database indexing, token refresh security, and API rate limiting if 100,000 active users hit your service simultaneously?`;
+        } else {
+          nextQuestionText = `Good response! How do you handle error recovery, token rotation, and zero-downtime microservice deployments in your production workflow?`;
+        }
+      } else if (session.currentQuestionIndex === 4) {
+        if (session.difficultyLevel >= 4) {
+          nextQuestionText = `You are demonstrating senior-level depth. Final technical question: How do you design distributed caching and horizontal sharding strategies to guarantee 99.99% availability?`;
+        } else {
+          nextQuestionText = `Good progress! Describe a situation where a technical decision you made turned out to be wrong under high load, and how you refactored it.`;
+        }
+      } else {
+        nextQuestionText = `To wrap up our interview: Tell me about a time when you disagreed with a senior engineer's architectural design and how you used benchmarks to reach alignment.`;
+      }
     }
   }
 
+  session.scores.push(qScore);
   session.previousQuestions.push(nextQuestionText);
 
   res.json({
@@ -376,22 +466,88 @@ app.post('/api/interview/next-question', (req, res) => {
     nextQuestion: nextQuestionText,
     evaluatedScore: qScore,
     currentDifficulty: session.difficultyLevel,
-    coachingTip: isUncertain 
-      ? "Tip: When unsure, break down your response into core engineering principles." 
-      : "Tip: Great technical depth! Continue using concrete metrics."
+    coachingTip
+  });
+});
+
+// EVALUATE SINGLE RESPONSE API (Used by text interview mode)
+app.post('/api/interview/evaluate', async (req, res) => {
+  const { question = '', answer = '', role = 'Software Engineer' } = req.body;
+  const cleanAnswer = (answer || '').trim();
+
+  // Try Gemini AI evaluation
+  try {
+    if (geminiService.isAiConfigured()) {
+      const prompt = `Evaluate this interview response for a ${role} position.\nQuestion: ${question}\nCandidate Answer: ${cleanAnswer}\n\nReturn JSON strictly with:\n{\n  "overallScore": number (50-98),\n  "feedbackSummary": "concise 1-2 sentence feedback"\n}`;
+      const raw = await geminiService.callGemini(prompt, 'You are an expert technical interviewer.', true);
+      const parsed = geminiService.cleanAndParseJson ? geminiService.cleanAndParseJson(raw, null) : null;
+      if (parsed && typeof parsed.overallScore === 'number') {
+        return res.json(parsed);
+      }
+    }
+  } catch(e) {}
+
+  // Heuristic Fallback
+  const wordCount = cleanAnswer.split(/\s+/).length;
+  const score = Math.min(95, Math.max(68, 72 + Math.floor(wordCount / 3)));
+  res.json({
+    overallScore: score,
+    feedbackSummary: wordCount > 30 
+      ? "Strong explanation of architectural trade-offs! Keep using concrete STAR metrics for upcoming questions."
+      : "Good technical baseline. Expand further on scalability trade-offs and error recovery."
   });
 });
 
 // FINAL REPORT API
-app.post('/api/interview/report', (req, res) => {
+app.post('/api/interview/report', async (req, res) => {
   const { sessionId = 'session_default' } = req.body;
   const session = activeSessions.get(sessionId) || {
     scores: [84, 88, 92, 80, 86],
-    candidateProfile: { name: 'Khushal Agarwal', role: 'Full Stack Developer', company: 'Tech Giant (FAANG)' },
+    candidateProfile: { name: 'Khushal Agarwal', role: 'Full Stack Developer', company: 'Tech Giant (FAANG)', resume: 'Full stack development' },
     evaluatedSkills: ["System Design", "React", "Node.js API Security"],
-    weakAreas: ["High-concurrency Sharding Trade-offs"]
+    weakAreas: ["High-concurrency Sharding Trade-offs"],
+    previousQuestions: [],
+    previousAnswers: []
   };
 
+  // Try real Gemini AI Comprehensive Report
+  try {
+    const aiReport = await geminiService.generateFinalReport(session);
+    if (aiReport && aiReport.overallScore) {
+      console.log(`[Gemini AI] Comprehensive evaluation report generated for ${session.candidateProfile.name}`);
+      return res.json({
+        success: true,
+        overallScore: aiReport.overallScore,
+        candidateProfile: session.candidateProfile,
+        executiveSummary: aiReport.executiveSummary,
+        metrics: aiReport.metrics || {
+          communication: 88,
+          technicalKnowledge: aiReport.overallScore,
+          confidence: 86,
+          answerRelevance: 88,
+          eyeContact: 95,
+          speakingPace: "Optimal"
+        },
+        strengths: aiReport.strengths || [
+          `Tailored expertise for ${session.candidateProfile.role} roles`,
+          "Clear articulation of system boundaries"
+        ],
+        weakTopics: aiReport.weakTopics || [
+          "High-concurrency database sharding trade-offs"
+        ],
+        questionsAnsweredWell: aiReport.questionsAnsweredWell || [
+          "System Architecture & State Management"
+        ],
+        suggestedResources: aiReport.suggestedResources || [
+          "Designing Data-Intensive Applications by Martin Kleppmann"
+        ]
+      });
+    }
+  } catch (err) {
+    console.warn('[Gemini AI] Final report generation failed, using fallback:', err.message);
+  }
+
+  // Fallback heuristic report
   const avgScore = session.scores.length 
     ? Math.round(session.scores.reduce((a,b)=>a+b, 0) / session.scores.length)
     : 85;
@@ -430,8 +586,41 @@ app.post('/api/interview/report', (req, res) => {
 });
 
 // SMART RESUME PARSER & AUTO PROFILE GENERATOR API (Enhanced PDF Extraction Intelligence)
-app.post('/api/resume/parse', (req, res) => {
+app.post('/api/resume/parse', async (req, res) => {
   const { filename = 'Resume.pdf', rawText = '' } = req.body;
+
+  // Try real Gemini AI Parsing if configured and rawText provided
+  try {
+    if (geminiService.isAiConfigured() && rawText && rawText.length > 30) {
+      const aiParsed = await geminiService.parseResumeWithAI(rawText, filename);
+      if (aiParsed && (aiParsed.name || aiParsed.role)) {
+        console.log(`[Gemini AI] Parsed resume for ${aiParsed.name || 'Candidate'}`);
+        return res.json({
+          success: true,
+          filename,
+          atsScore: 92,
+          extractedProfile: {
+            candidateName: aiParsed.name || 'Candidate',
+            jobRole: aiParsed.role || 'Full Stack Developer',
+            experienceLevel: aiParsed.experienceLevel || 'Mid Level (2-5 yrs)',
+            interviewType: 'Technical & Architecture',
+            targetCompany: aiParsed.targetCompany || 'Tier-1 Tech',
+            resumeHighlights: aiParsed.resumeHighlights || rawText.substring(0, 300),
+            difficultyLevel: 3,
+            skills: aiParsed.skills || {
+              frontend: ['React', 'TypeScript'],
+              backend: ['Node.js', 'Express'],
+              databases: ['PostgreSQL'],
+              cloudDevOps: ['Docker', 'AWS'],
+              aiMl: ['OpenAI API']
+            }
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('[Gemini AI] Resume parsing error, using heuristic fallback:', err.message);
+  }
 
   let candidateName = filename
     .replace(/\.(pdf|doc|docx|txt)$/i, '')
