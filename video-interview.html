@@ -301,7 +301,7 @@ header {
       🔒 <strong>Privacy Policy Notice:</strong> The camera is used to verify interview participation and maintain interview integrity. Identity-related processing is limited to the interview session according to the platform's privacy policy. No raw biometric images are stored permanently.
     </div>
 
-    <button class="start-btn" id="start-interview-btn">Start Interview 🚀</button>
+    <button class="start-btn" id="start-interview-btn" onclick="window._startInterview()">Start Interview 🚀</button>
 
     <!-- Candidate name display -->
     <p style="font-size:12px; color:var(--muted); margin-top:6px;">Session will be recorded for <strong id="consent-name" style="color:var(--text)">Candidate</strong></p>
@@ -1864,38 +1864,6 @@ header {
       speakQuestion(currentQText);
     }
   }
-        isComplete,
-        questionIndex: currentQIndex + 1,
-        totalQuestions: 5,
-        nextQuestion: fallbackQuestions[currentQIndex] || "Thank you for completing the interview session. Your responses have been recorded.",
-        coachingTip: isUncertain ? "Tip: Break down your answer into core engineering principles." : "Tip: Great technical depth! Continue using concrete metrics."
-      };
-    }
-
-    const qScore = data.evaluatedScore || 82;
-    questionAnalysisList.push({
-      questionIndex: currentQIndex,
-      questionText: currentQText,
-      candidateAnswer: answerText,
-      score: qScore,
-      relevance: Math.min(98, qScore + 4),
-      clarity: Math.min(96, qScore + 2),
-      technicalDepth: Math.max(65, qScore - 4),
-      confidence: Math.min(95, qScore + 3),
-      status: qScore < 75 ? 'Needs Improvement' : 'Good Answer',
-      feedback: data.coachingTip || 'Good technical explanation with relevant architecture choices.'
-    });
-
-    if (data.isComplete) {
-      finishInterviewSession();
-    } else {
-      currentQIndex = data.questionIndex;
-      currentQText = data.nextQuestion;
-      document.getElementById('question-progress').textContent = `Question ${currentQIndex} / ${data.totalQuestions || 5}`;
-      document.getElementById('caption-text').textContent = `"${currentQText}"`;
-      speakQuestion(currentQText);
-    }
-  }
 
   function startSessionTimer() {
     if (sessionTimerInterval) clearInterval(sessionTimerInterval);
@@ -2003,6 +1971,18 @@ header {
     var mainVid     = document.getElementById('webcam-feed');
     var canvasOverlay = document.getElementById('landmark-canvas');
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (permBtn) {
+        permBtn.innerHTML = '❌ MediaDevices not supported on non-HTTPS connection';
+        permBtn.style.color = '#fca5a5';
+      }
+      if (msgBox) {
+        msgBox.textContent = 'Camera & Microphone access requires a secure connection (HTTPS or localhost).';
+        msgBox.style.color = '#fca5a5';
+      }
+      return;
+    }
+
     if (permBtn) {
       permBtn.innerHTML = '⏳ Waiting for browser permission…';
       permBtn.style.opacity = '0.7';
@@ -2010,10 +1990,25 @@ header {
 
     try {
       var stream = null;
+      // 1. Try video + audio with optimal constraints
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, 
+          audio: true 
+        });
       } catch (e1) {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        // 2. Try generic video + audio
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        } catch (e2) {
+          // 3. Try video only (in case mic hardware is absent or blocked)
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          } catch(e3) {
+            // 4. Try basic stream
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          }
+        }
       }
 
       if (stream) {
@@ -2021,23 +2016,34 @@ header {
         window._mediaStream = stream;
 
         [modalVid, mainVid].forEach(function(vid) {
-          if (vid) { vid.srcObject = stream; vid.muted = true; vid.play().catch(function(){}); }
+          if (vid) { 
+            vid.srcObject = stream; 
+            vid.muted = true; 
+            vid.play().catch(function(pErr){ console.warn('Video play error:', pErr); }); 
+          }
         });
 
         if (placeholder) placeholder.style.display = 'none';
         if (verifyOverlay) verifyOverlay.style.display = 'block';
 
         if (permBtn) {
-          permBtn.innerHTML = '✅ Camera Active — Now click <strong style="color:#c8ff5e">📸 Capture &amp; Verify</strong>';
+          permBtn.innerHTML = '✅ Camera & Mic Active — Click <strong style="color:#c8ff5e">📸 Capture &amp; Verify</strong> below';
           permBtn.style.background = 'rgba(74,222,128,0.15)';
           permBtn.style.borderColor = 'rgba(74,222,128,0.4)';
           permBtn.style.color = '#86efac';
+          permBtn.style.opacity = '1';
         }
 
         if (chkCount) {
-          chkCount.textContent = '✓ Camera enabled';
+          chkCount.textContent = '✓ Camera & Mic enabled';
           chkCount.style.color = '#4ade80';
           chkCount.style.borderColor = 'rgba(74,222,128,0.3)';
+        }
+
+        if (msgBox) {
+          msgBox.textContent = 'Camera stream active! Click "Capture & Verify" to take your identity snapshot.';
+          msgBox.style.background = 'rgba(74,222,128,0.12)';
+          msgBox.style.color = '#86efac';
         }
 
         // Start real-time face tracking in modal preview
@@ -2049,11 +2055,18 @@ header {
         } catch(e){}
       }
     } catch(err) {
-      console.warn('Camera permission denied:', err);
+      console.warn('Camera/Mic permission error:', err);
       if (permBtn) {
-        permBtn.innerHTML = '❌ Camera blocked — Click the 🔒 lock icon in the address bar → Allow Camera';
+        permBtn.innerHTML = '❌ Permission blocked — Click the 🔒 lock icon in the address bar → Allow Camera & Mic';
         permBtn.style.background = 'rgba(239,68,68,0.15)';
+        permBtn.style.borderColor = 'rgba(239,68,68,0.4)';
         permBtn.style.color = '#fca5a5';
+        permBtn.style.opacity = '1';
+      }
+      if (msgBox) {
+        msgBox.textContent = 'Permission denied by browser. Please click the lock icon 🔒 next to the URL and set Camera & Microphone to Allow, then refresh.';
+        msgBox.style.background = 'rgba(239,68,68,0.12)';
+        msgBox.style.color = '#fca5a5';
       }
     }
   };
@@ -2066,6 +2079,7 @@ header {
     var chkCap     = document.getElementById('id-check-captured');
     var verifyBtn  = document.getElementById('verify-identity-btn');
     var msgBox     = document.getElementById('id-verification-msg');
+    var startBtn   = document.getElementById('start-interview-btn');
 
     const result = FaceDetectionService.captureSessionReference(modalVid);
     const photo = result.photoDataUrl || 'interviewee.jpg';
@@ -2073,13 +2087,29 @@ header {
 
     if (snapImg) { snapImg.src = photo; snapImg.style.display = 'block'; }
     if (snapBadge) snapBadge.style.display = 'block';
-    if (verifyBtn) { verifyBtn.textContent = '✅ Verified!'; verifyBtn.style.borderColor = '#4ade80'; verifyBtn.style.color = '#4ade80'; }
-    if (chkVisible) { chkVisible.textContent = '✓ Face visible'; chkVisible.style.color = '#4ade80'; chkVisible.style.borderColor = 'rgba(74,222,128,0.3)'; }
-    if (chkCap) { chkCap.textContent = '✓ Identity captured'; chkCap.style.color = '#4ade80'; chkCap.style.borderColor = 'rgba(74,222,128,0.3)'; }
+    if (verifyBtn) { 
+      verifyBtn.textContent = '✅ Verified!'; 
+      verifyBtn.style.borderColor = '#4ade80'; 
+      verifyBtn.style.color = '#4ade80'; 
+    }
+    if (chkVisible) { 
+      chkVisible.textContent = '✓ Face visible'; 
+      chkVisible.style.color = '#4ade80'; 
+      chkVisible.style.borderColor = 'rgba(74,222,128,0.3)'; 
+    }
+    if (chkCap) { 
+      chkCap.textContent = '✓ Identity captured'; 
+      chkCap.style.color = '#4ade80'; 
+      chkCap.style.borderColor = 'rgba(74,222,128,0.3)'; 
+    }
     if (msgBox) {
-      msgBox.textContent = '✅ Identity verified. You can now click Start Interview 🚀';
-      msgBox.style.background = 'rgba(74,222,128,0.12)';
+      msgBox.textContent = '✅ Identity verified successfully! You can now click Start Interview 🚀 below.';
+      msgBox.style.background = 'rgba(74,222,128,0.15)';
       msgBox.style.color = '#86efac';
+    }
+    if (startBtn) {
+      startBtn.style.boxShadow = '0 0 25px rgba(200,255,94,0.5)';
+      startBtn.focus();
     }
   };
 
